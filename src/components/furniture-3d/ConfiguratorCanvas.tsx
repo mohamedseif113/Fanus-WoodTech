@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, Suspense } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Environment, useTexture } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -67,45 +67,44 @@ function CameraController({ is2D, isTVStand }: CameraControllerProps) {
 }
 
 /**
- * Woodcoder-matching showroom: BoxGeometry room with real wood floor
- * and ribbed wall textures, plus studio HDR environment lighting.
- * Face order for BoxGeometry material array:
- *   [+x right, -x left, +y top(ceiling), -y bottom(floor), +z front, -z back]
- * Woodcoder mapping: [wall_a, wall_a, wall_b, floor_z, wall_b, wall_b]
+ * Showroom Floor and Wall restored to original room dimensions and proportions:
+ * Floor: 18x18 plane at y = -0.002
+ * Back Wall: 18x8 plane at y = 4.0, z = -3.5
  */
 function ShowroomEnvironment() {
-  const [wallTexA, wallTexB, floorTex] = useTexture([
-    "/wall_a.webp",
+  const [wallTex, floorTex] = useTexture([
     "/wall_b.webp",
     "/floor_z.webp",
   ]);
 
-  // Configure repeat and wrapping
-  [wallTexA, wallTexB].forEach((tex) => {
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(50, 50);
-  });
-  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
-  floorTex.repeat.set(20, 20);
+  wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
+  wallTex.repeat.set(16, 8);
 
-  // Room box: 40×15×40 Three.js units, viewed from inside (BackSide)
-  // Positioned so floor (bottom face, y=-7.5 in local space) sits at world y=0
+  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+  floorTex.repeat.set(12, 12);
+
   return (
-    <mesh position={[0, 7.5, 0]} receiveShadow>
-      <boxGeometry args={[40, 15, 40]} />
-      {/* +x right wall  → wall_a */}
-      <meshStandardMaterial attach="material-0" map={wallTexA} side={THREE.BackSide} roughness={0.9} metalness={0} />
-      {/* -x left wall   → wall_a */}
-      <meshStandardMaterial attach="material-1" map={wallTexA} side={THREE.BackSide} roughness={0.9} metalness={0} />
-      {/* +y ceiling      → wall_b */}
-      <meshStandardMaterial attach="material-2" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
-      {/* -y floor        → floor_z */}
-      <meshStandardMaterial attach="material-3" map={floorTex} side={THREE.BackSide} roughness={0.6} metalness={0.02} />
-      {/* +z front wall   → wall_b */}
-      <meshStandardMaterial attach="material-4" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
-      {/* -z back wall    → wall_b */}
-      <meshStandardMaterial attach="material-5" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
-    </mesh>
+    <>
+      {/* Floor - original 18x18 dimensions with warm wood parquet */}
+      <mesh position={[0, -0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[18, 18]} />
+        <meshStandardMaterial
+          map={floorTex}
+          roughness={0.65}
+          metalness={0.02}
+        />
+      </mesh>
+
+      {/* Back Wall - original 18x8 dimensions at z = -3.5 with subtle ribbed texture */}
+      <mesh position={[0, 4.0, -3.5]} receiveShadow>
+        <planeGeometry args={[18, 8]} />
+        <meshStandardMaterial
+          map={wallTex}
+          roughness={0.92}
+          metalness={0.01}
+        />
+      </mesh>
+    </>
   );
 }
 
@@ -136,19 +135,21 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
     (tvState.upperSection !== "none" ? tvState.dimensions.upperHeight : 0);
 
   return (
-    <div className="w-full h-full relative select-none">
+    <div className="w-full h-full relative select-none bg-[#ded7cb]">
       <Canvas
         shadows
-        camera={{ position: [2.4, 1.45, 2.7], fov: 45, far: 100 }}
-        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+        camera={{ position: [2.4, 1.45, 2.7], fov: 45 }}
+        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
         className="canvas-3d-cursor"
       >
         <CameraController is2D={is2D} isTVStand={isTV} />
 
-        {/* Studio HDR environment lighting — matches Woodcoder studio.hdr */}
-        <Environment files="/studio.hdr" />
+        {/* Studio HDR environment lighting */}
+        <Suspense fallback={null}>
+          <Environment files="/studio.hdr" />
+        </Suspense>
 
-        {/* Key directional light for shadow casting (Environment alone doesn't cast shadows) */}
+        {/* Directional light for subtle grounding shadows under the furniture */}
         <directionalLight
           castShadow
           position={[4.5, 7.5, 4.0]}
@@ -162,7 +163,7 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           shadow-camera-bottom={-3.2}
           shadow-bias={-0.0001}
         />
-        {/* Soft fill lights */}
+        {/* Fill lights */}
         <directionalLight position={[-4, 3, 2]} intensity={0.28} color="#edf4fc" />
         <directionalLight position={[0, -1, 3]} intensity={0.14} color="#faf5ea" />
 
@@ -199,9 +200,11 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           />
         )}
 
-        {/* 1.80m Human Scale Figure — real Woodcoder woodman2.glb */}
+        {/* 1.80m Human Scale Figure with 180 cm label and no floor shadow */}
         {showHumanScale && !isExploded && (
-          <HumanScaleFigure position={humanPosition} visible={true} />
+          <Suspense fallback={null}>
+            <HumanScaleFigure position={humanPosition} visible={true} />
+          </Suspense>
         )}
 
         {/* 3D Dimension Guides */}
@@ -220,7 +223,7 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           />
         )}
 
-        {/* Ground Contact Shadows */}
+        {/* Ground Contact Shadows for furniture */}
         <ContactShadows
           position={[0, 0, 0]}
           opacity={0.45}
@@ -231,8 +234,10 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           color="#221b14"
         />
 
-        {/* Woodcoder-matching showroom: textured box room */}
-        <ShowroomEnvironment />
+        {/* Restored Showroom Floor & Wall */}
+        <Suspense fallback={null}>
+          <ShowroomEnvironment />
+        </Suspense>
       </Canvas>
     </div>
   );
