@@ -7,7 +7,8 @@ interface CartStore {
   items: CartItem[];
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  addItem: (config: FurnitureConfiguration, customName?: string, category?: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  addItem: (config: any, customName?: string, category?: string) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;

@@ -55,7 +55,8 @@ export interface CartItem {
   productId: string;
   productName: string;
   category: string;
-  configuration: FurnitureConfiguration;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  configuration: FurnitureConfiguration | any;
   quantity: number;
   unitPrice: number;
   image?: string;

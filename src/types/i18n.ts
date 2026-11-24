@@ -197,6 +197,34 @@ export interface TranslationDictionary {
     savedDesignsEmpty: string;
     load: string;
     viewIn3D: string;
+    // TV Stand additions
+    tvStandTitle: string;
+    productModel: string;
+    tvStandModel: string;
+    cabinetModel: string;
+    tvConsoleWidth: string;
+    tvConsoleHeight: string;
+    tvConsoleDepth: string;
+    tvUpperHeight: string;
+    upperSection: string;
+    upperNone: string;
+    upperCabinets: string;
+    upperShelves: string;
+    upperMixed: string;
+    upperDoors: string;
+    doorSolid: string;
+    doorGlass: string;
+    openShelvesCount: string;
+    sidePanels: string;
+    tvNiche: string;
+    included: string;
+    notIncluded: string;
+    accordionDimensions: string;
+    accordionModules: string;
+    accordionMaterials: string;
+    accordionHardware: string;
+    accordionSummary: string;
+    customDimensions: string;
   };
   cart: {
     title: string;

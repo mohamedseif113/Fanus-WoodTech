@@ -1,32 +1,32 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  RotateCcw,
-  Layers,
-  Camera,
-  Ruler,
-} from "lucide-react";
+import { RotateCcw, Layers, Camera, Ruler } from "lucide-react";
 import { useConfiguratorStore } from "@/store/useConfiguratorStore";
+import { useTVStandStore } from "@/store/useTVStandStore";
 import { useI18nStore } from "@/store/useI18nStore";
 import { PresetView } from "@/types/furniture";
 
 interface ViewportToolbarProps {
   showDimensions: boolean;
   onToggleDimensions: () => void;
+  activeModel?: "tv-stand" | "cabinet";
 }
 
 export const ViewportToolbar: React.FC<ViewportToolbarProps> = ({
   showDimensions,
   onToggleDimensions,
+  activeModel = "tv-stand",
 }) => {
   const { t } = useI18nStore();
-  const {
-    explodedView,
-    toggleExplodedView,
-    cameraPreset,
-    setCameraPreset,
-  } = useConfiguratorStore();
+  const cabinetStore = useConfiguratorStore();
+  const tvStore = useTVStandStore();
+
+  const isTV = activeModel === "tv-stand";
+  const explodedView = isTV ? tvStore.explodedView : cabinetStore.explodedView;
+  const toggleExplodedView = isTV ? tvStore.toggleExplodedView : cabinetStore.toggleExplodedView;
+  const cameraPreset = isTV ? tvStore.cameraPreset : cabinetStore.cameraPreset;
+  const setCameraPreset = isTV ? tvStore.setCameraPreset : cabinetStore.setCameraPreset;
 
   const [screenshotTaken, setScreenshotTaken] = useState(false);
 
@@ -44,7 +44,7 @@ export const ViewportToolbar: React.FC<ViewportToolbarProps> = ({
       const dataUrl = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `fanus-woodtech-${Date.now()}.png`;
+      a.download = `fanus-woodtech-${activeModel}-${Date.now()}.png`;
       a.click();
       setScreenshotTaken(true);
       setTimeout(() => setScreenshotTaken(false), 2000);
@@ -55,16 +55,16 @@ export const ViewportToolbar: React.FC<ViewportToolbarProps> = ({
 
   return (
     <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between pointer-events-none gap-2 z-10">
-      {/* LEFT: Camera Presets */}
-      <div className="pointer-events-auto flex items-center bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-soft-md border border-stone-200/80">
+      {/* LEFT: Camera Presets (pill button group) */}
+      <div className="pointer-events-auto flex items-center bg-white/95 backdrop-blur-md rounded-xl p-1 shadow-soft-md border border-stone-200/90">
         {presets.map((p) => (
           <button
             key={p.id}
             onClick={() => setCameraPreset(p.id)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
               cameraPreset === p.id
-                ? "bg-wood-700 text-white shadow-sm"
-                : "text-stone-700 hover:text-stone-900 hover:bg-stone-100"
+                ? "bg-wood-800 text-white shadow-sm"
+                : "text-stone-700 hover:text-stone-950 hover:bg-stone-100"
             }`}
           >
             {p.label}
@@ -72,12 +72,12 @@ export const ViewportToolbar: React.FC<ViewportToolbarProps> = ({
         ))}
       </div>
 
-      {/* RIGHT: Actions (Exploded View, Dimensions, Screenshot, Reset) */}
-      <div className="pointer-events-auto flex items-center gap-1.5 bg-white/90 backdrop-blur-md rounded-xl p-1 shadow-soft-md border border-stone-200/80">
+      {/* RIGHT: Visual actions (Exploded View, Dimensions, Screenshot, Reset) */}
+      <div className="pointer-events-auto flex items-center gap-1.5 bg-white/95 backdrop-blur-md rounded-xl p-1 shadow-soft-md border border-stone-200/90">
         {/* Exploded View Toggle */}
         <button
           onClick={toggleExplodedView}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
             explodedView
               ? "bg-amber-600 text-white shadow-sm ring-2 ring-amber-300"
               : "text-stone-700 hover:text-stone-900 hover:bg-stone-100"
@@ -104,11 +104,11 @@ export const ViewportToolbar: React.FC<ViewportToolbarProps> = ({
           <Ruler className="w-4 h-4" />
         </button>
 
-        {/* Take Screenshot */}
+        {/* Screenshot */}
         <button
           onClick={handleScreenshot}
           className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-all relative"
-          title="Ekran Görüntüsü İndir"
+          title="Görüntüyü Kaydet"
         >
           <Camera className="w-4 h-4" />
           {screenshotTaken && (

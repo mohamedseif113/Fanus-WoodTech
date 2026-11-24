@@ -27,30 +27,40 @@ const ConfiguratorCanvas = dynamic(
 
 export const ConfiguratorLayout: React.FC = () => {
   const [showDimensions, setShowDimensions] = useState(true);
+  const [activeModel, setActiveModel] = useState<"tv-stand" | "cabinet">("tv-stand");
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-68px)] min-h-[600px] overflow-hidden bg-stone-100">
-      {/* 3D VIEWPORT (LEFT / CENTER) */}
-      <div className="flex-1 relative h-[50vh] lg:h-full overflow-hidden">
-        {/* Floating Toolbar */}
+    <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-68px)] min-h-[650px] overflow-hidden bg-stone-100">
+      {/* 1. CONFIGURATION SIDEBAR (LEFT on desktop - Woodcoder pattern) */}
+      <ConfiguratorSidebar
+        activeModel={activeModel}
+        onModelChange={setActiveModel}
+      />
+
+      {/* 2. 3D VIEWPORT (RIGHT on desktop - fills remaining width) */}
+      <main className="flex-1 relative h-[50vh] lg:h-full overflow-hidden bg-stone-100 order-first lg:order-last">
+        {/* Floating Top/Bottom Toolbar */}
         <ViewportToolbar
           showDimensions={showDimensions}
           onToggleDimensions={() => setShowDimensions(!showDimensions)}
+          activeModel={activeModel}
         />
 
-        {/* 3D Scene */}
-        <ConfiguratorCanvas showDimensions={showDimensions} />
+        {/* 3D Scene Canvas */}
+        <ConfiguratorCanvas
+          showDimensions={showDimensions}
+          activeModel={activeModel}
+        />
 
-        {/* Bottom subtle interaction hint */}
-        <div className="absolute bottom-4 left-4 pointer-events-none hidden sm:flex items-center gap-2 bg-white/75 backdrop-blur-md px-3 py-1.5 rounded-lg border border-stone-200 text-[11px] text-stone-600 shadow-sm">
+        {/* Bottom subtle interaction hint (Woodcoder style) */}
+        <div className="absolute bottom-4 left-4 pointer-events-none hidden sm:flex items-center gap-2 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-stone-200/90 text-[11px] text-stone-600 shadow-soft-sm font-medium">
           <span>Döndürmek için sürükleyin</span>
-          <span>•</span>
+          <span className="text-stone-300">•</span>
           <span>Yakınlaştırmak için kaydırın</span>
+          <span className="text-stone-300">•</span>
+          <span>Kaydırmak için sağ tık</span>
         </div>
-      </div>
-
-      {/* CONFIGURATION SIDEBAR (RIGHT) */}
-      <ConfiguratorSidebar />
+      </main>
     </div>
   );
 };
