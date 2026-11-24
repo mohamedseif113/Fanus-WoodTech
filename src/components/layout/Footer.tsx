@@ -34,14 +34,14 @@ export const Footer: React.FC = () => {
         <FadeIn className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-stone-800">
           {/* COLUMN 1 & 2: BRAND & ABOUT */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2.5 notranslate" translate="no" suppressHydrationWarning>
               <div className="w-10 h-10 rounded-xl bg-wood-700 flex items-center justify-center text-amber-200">
                 <Box className="w-5 h-5" />
               </div>
-              <div className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5">
-                <span>Fanus</span>
-                <span className="text-wood-400">WoodTech</span>
-                <span className="text-xs bg-wood-800 text-amber-200 px-1.5 py-0.5 rounded font-bold">3D</span>
+              <div className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5 notranslate" translate="no" suppressHydrationWarning>
+                <span suppressHydrationWarning className="notranslate" translate="no">Fanus</span>
+                <span className="text-wood-400 notranslate" translate="no" suppressHydrationWarning>WoodTech</span>
+                <span className="text-xs bg-wood-800 text-amber-200 px-1.5 py-0.5 rounded font-bold notranslate" translate="no" suppressHydrationWarning>3D</span>
               </div>
             </Link>
 

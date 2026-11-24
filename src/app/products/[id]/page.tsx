@@ -74,8 +74,8 @@ export default function ProductDetailPage() {
         {/* Product Specs & CTA (Right) */}
         <FadeIn direction="left" delay={0.15} className="lg:col-span-5 space-y-6">
           <div>
-            <div className="text-xs font-semibold text-wood-700 tracking-woodcoder-tag uppercase mb-1.5">
-              Fanus Modüler Mimari Seri
+            <div className="text-xs font-semibold text-wood-700 tracking-woodcoder-tag uppercase mb-1.5" suppressHydrationWarning>
+              <span translate="no" className="notranslate" suppressHydrationWarning>Fanus</span> Modüler Mimari Seri
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">
               {product.nameKey}

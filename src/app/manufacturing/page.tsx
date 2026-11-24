@@ -26,8 +26,8 @@ export default function ManufacturingPage() {
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
               {t.manufacturing.title}
             </h1>
-            <p className="text-sm sm:text-base text-stone-300 max-w-2xl leading-relaxed font-normal">
-              {t.manufacturing.subtitle} Fanus WoodTech, 4.500 m² kapalı alanda faaliyet gösteren CNC işleme merkezleri ve otomasyon hatlarıyla kişiye özel mobilyayı seri üretim hassasiyetiyle buluşturur.
+            <p className="text-sm sm:text-base text-stone-300 max-w-2xl leading-relaxed font-normal" suppressHydrationWarning>
+              {t.manufacturing.subtitle} <span translate="no" className="notranslate" suppressHydrationWarning>Fanus</span> WoodTech, 4.500 m² kapalı alanda faaliyet gösteren CNC işleme merkezleri ve otomasyon hatlarıyla kişiye özel mobilyayı seri üretim hassasiyetiyle buluşturur.
             </p>
           </FadeIn>
         </div>

@@ -8,42 +8,35 @@ import * as THREE from "three";
 import { Cabinet3D } from "./Cabinet3D";
 import { TVStand3D } from "./TVStand3D";
 import { DimensionGuides } from "./DimensionGuides";
+import { HumanScaleFigure } from "./HumanScaleFigure";
 import { useConfiguratorStore } from "@/store/useConfiguratorStore";
 import { useTVStandStore } from "@/store/useTVStandStore";
 
 interface CameraControllerProps {
-  preset: string;
-  isTVStand?: boolean;
+  is2D: boolean;
+  isTVStand: boolean;
 }
 
-const PRESET_COORDINATES_CABINET: Record<string, { pos: [number, number, number]; target: [number, number, number] }> = {
-  perspective: { pos: [2.3, 1.5, 2.6], target: [0, 1.0, 0] },
-  front: { pos: [0, 1.0, 3.2], target: [0, 1.0, 0] },
-  side: { pos: [3.2, 1.0, 0], target: [0, 1.0, 0] },
-  top: { pos: [0, 3.6, 0.05], target: [0, 1.0, 0] },
-};
-
-const PRESET_COORDINATES_TV: Record<string, { pos: [number, number, number]; target: [number, number, number] }> = {
-  perspective: { pos: [2.2, 1.4, 2.7], target: [0, 0.65, 0] },
-  front: { pos: [0, 0.7, 3.2], target: [0, 0.65, 0] },
-  side: { pos: [3.2, 0.7, 0], target: [0, 0.65, 0] },
-  top: { pos: [0, 3.8, 0.05], target: [0, 0.65, 0] },
-};
-
-function CameraController({ preset, isTVStand }: CameraControllerProps) {
+function CameraController({ is2D, isTVStand }: CameraControllerProps) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const coords = isTVStand ? PRESET_COORDINATES_TV : PRESET_COORDINATES_CABINET;
-  const targetPos = useRef(new THREE.Vector3(...(coords[preset] || coords.perspective).pos));
-  const targetLook = useRef(new THREE.Vector3(...(coords[preset] || coords.perspective).target));
+
+  const targetPos = useRef(new THREE.Vector3(0, 0.75, 2.9));
+  const targetLook = useRef(new THREE.Vector3(0, isTVStand ? 0.65 : 0.95, 0));
   const isTransitioning = useRef(false);
 
   useEffect(() => {
-    const p = coords[preset] || coords.perspective;
-    targetPos.current.set(...p.pos);
-    targetLook.current.set(...p.target);
+    if (is2D) {
+      // Straight front elevation
+      targetPos.current.set(0, isTVStand ? 0.65 : 0.95, 3.4);
+      targetLook.current.set(0, isTVStand ? 0.65 : 0.95, 0);
+    } else {
+      // Perspective showroom view
+      targetPos.current.set(2.4, 1.45, 2.7);
+      targetLook.current.set(0, isTVStand ? 0.65 : 0.95, 0);
+    }
     isTransitioning.current = true;
-  }, [preset, coords]);
+  }, [is2D, isTVStand]);
 
   useFrame((_, delta) => {
     if (isTransitioning.current && controlsRef.current) {
@@ -61,13 +54,14 @@ function CameraController({ preset, isTVStand }: CameraControllerProps) {
     <OrbitControls
       ref={controlsRef}
       makeDefault
-      minDistance={1.1}
-      maxDistance={6.5}
+      enableRotate={!is2D}
+      minDistance={1.2}
+      maxDistance={6.8}
       minPolarAngle={Math.PI / 16}
-      maxPolarAngle={Math.PI / 2 + 0.04}
+      maxPolarAngle={Math.PI / 2 + 0.02}
       enableDamping
       dampingFactor={0.06}
-      target={isTVStand ? [0, 0.65, 0] : [0, 1.0, 0]}
+      target={[0, isTVStand ? 0.65 : 0.95, 0]}
     />
   );
 }
@@ -75,53 +69,59 @@ function CameraController({ preset, isTVStand }: CameraControllerProps) {
 interface ConfiguratorCanvasProps {
   showDimensions?: boolean;
   activeModel?: "tv-stand" | "cabinet";
+  is2D?: boolean;
+  showHumanScale?: boolean;
 }
 
 export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
-  showDimensions = true,
+  showDimensions = false,
   activeModel = "tv-stand",
+  is2D = false,
+  showHumanScale = true,
 }) => {
   const cabinetState = useConfiguratorStore();
   const tvState = useTVStandStore();
 
   const isTV = activeModel === "tv-stand";
-  const preset = isTV ? tvState.cameraPreset : cabinetState.cameraPreset;
   const isExploded = isTV ? tvState.explodedView : cabinetState.explodedView;
+
+  const currentW = isTV ? tvState.dimensions.width / 100 : cabinetState.dimensions.width / 100;
+  const humanPosition: [number, number, number] = [-currentW / 2 - 0.42, 0, 0.1];
 
   const tvTotalHeight =
     tvState.dimensions.height +
     (tvState.upperSection !== "none" ? tvState.dimensions.upperHeight : 0);
 
   return (
-    <div className="w-full h-full relative select-none bg-gradient-to-b from-[#f9f7f4] via-[#f3efe8] to-[#e9e3d8]">
+    <div className="w-full h-full relative select-none bg-[#ded7cb]">
       <Canvas
         shadows
-        camera={{ position: [2.2, 1.4, 2.7], fov: 45 }}
+        camera={{ position: [2.4, 1.45, 2.7], fov: 45 }}
         gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
         className="canvas-3d-cursor"
       >
-        <CameraController preset={preset} isTVStand={isTV} />
+        <CameraController is2D={is2D} isTVStand={isTV} />
 
-        {/* Studio Lighting */}
-        <ambientLight intensity={0.68} />
+        {/* Studio Showroom Lighting matching Woodcoder reference */}
+        <ambientLight intensity={0.72} color="#ffffff" />
         <directionalLight
           castShadow
-          position={[4.5, 7.5, 3.5]}
-          intensity={1.25}
+          position={[4.5, 7.5, 4.0]}
+          intensity={1.3}
           shadow-mapSize={[1024, 1024]}
           shadow-camera-near={0.5}
-          shadow-camera-far={15}
-          shadow-camera-left={-2.8}
-          shadow-camera-right={2.8}
-          shadow-camera-top={2.8}
-          shadow-camera-bottom={-2.8}
+          shadow-camera-far={16}
+          shadow-camera-left={-3.2}
+          shadow-camera-right={3.2}
+          shadow-camera-top={3.2}
+          shadow-camera-bottom={-3.2}
           shadow-bias={-0.0001}
         />
-        {/* Fill lights */}
-        <directionalLight position={[-4, 3, -2]} intensity={0.35} color="#e6effa" />
-        <directionalLight position={[0, -2, 2]} intensity={0.15} color="#faf3e8" />
+        {/* Soft front & side fills */}
+        <directionalLight position={[-4, 3, 2]} intensity={0.35} color="#edf4fc" />
+        <directionalLight position={[0, -1, 3]} intensity={0.18} color="#faf5ea" />
 
-        {/* Model rendering */}
+        {/* 3D Furniture Models */}
         {isTV ? (
           <TVStand3D
             width={tvState.dimensions.width}
@@ -154,6 +154,11 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           />
         )}
 
+        {/* 1.80m Human Scale Figure (Matching Woodcoder screenshot!) */}
+        {showHumanScale && !isExploded && (
+          <HumanScaleFigure position={humanPosition} visible={true} />
+        )}
+
         {/* 3D Dimension Guides */}
         {!isExploded && showDimensions && (
           <DimensionGuides
@@ -173,18 +178,24 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
         {/* Ground Contact Shadows */}
         <ContactShadows
           position={[0, 0, 0]}
-          opacity={0.42}
-          scale={5.8}
+          opacity={0.45}
+          scale={7.0}
           blur={1.8}
           far={3.0}
           resolution={512}
-          color="#241b12"
+          color="#221b14"
         />
 
-        {/* Circular studio platform */}
+        {/* Showroom Wall & Floor (Warm neutral room environment) */}
+        {/* Floor */}
         <mesh position={[0, -0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <circleGeometry args={[3.2, 64]} />
-          <meshStandardMaterial color="#ede7db" roughness={0.9} metalness={0.05} />
+          <planeGeometry args={[18, 18]} />
+          <meshStandardMaterial color="#c5beaf" roughness={0.92} metalness={0.02} />
+        </mesh>
+        {/* Subtle Back Wall */}
+        <mesh position={[0, 4.0, -3.5]} receiveShadow>
+          <planeGeometry args={[18, 8]} />
+          <meshStandardMaterial color="#b9b3a5" roughness={0.95} metalness={0.01} />
         </mesh>
       </Canvas>
     </div>

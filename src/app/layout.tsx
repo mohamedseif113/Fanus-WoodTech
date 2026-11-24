@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     "CNC mobilya üretimi",
     "Fanus WoodTech",
   ],
+  other: {
+    google: "notranslate",
+  },
 };
 
 export default function RootLayout({
@@ -32,9 +35,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" suppressHydrationWarning>
+    <html lang="tr" translate="no" className="notranslate" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} font-sans min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased`}
+        className={`${poppins.variable} font-sans min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased notranslate`}
+        translate="no"
         suppressHydrationWarning
       >
         <Navbar />

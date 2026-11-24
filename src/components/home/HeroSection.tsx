@@ -169,8 +169,8 @@ export const HeroSection: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-end">
                     <div>
-                      <h3 className="font-bold text-lg text-white">
-                        Fanus Master Vitrin Dolabı
+                      <h3 className="font-bold text-lg text-white" suppressHydrationWarning>
+                        <span translate="no" className="notranslate" suppressHydrationWarning>Fanus</span> Master Vitrin Dolabı
                       </h3>
                       <p className="text-xs text-stone-300">
                         120 x 180 x 40 cm • Doğal Meşe
