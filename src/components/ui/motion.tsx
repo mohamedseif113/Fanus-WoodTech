@@ -68,7 +68,7 @@ export const StaggerContainer: React.FC<{
   className?: string;
   staggerDelay?: number;
   delayChildren?: number;
-}> = ({ children, className = "", staggerDelay = 0.1, delayChildren = 0.05 }) => {
+}> = ({ children, className = "", staggerDelay = 0.08, delayChildren = 0.03 }) => {
   const shouldReduceMotion = useReducedMotion();
 
   const variants: Variants = {
@@ -86,8 +86,7 @@ export const StaggerContainer: React.FC<{
     <motion.div
       variants={variants}
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-40px" }}
+      animate="visible"
       className={className}
     >
       {children}
@@ -99,7 +98,7 @@ export const StaggerItem: React.FC<{
   children: React.ReactNode;
   className?: string;
   distance?: number;
-}> = ({ children, className = "", distance = 24 }) => {
+}> = ({ children, className = "", distance = 20 }) => {
   const shouldReduceMotion = useReducedMotion();
 
   const variants: Variants = {
@@ -108,14 +107,19 @@ export const StaggerItem: React.FC<{
       opacity: 1,
       y: 0,
       transition: {
-        duration: shouldReduceMotion ? 0.01 : 0.6,
+        duration: shouldReduceMotion ? 0.01 : 0.45,
         ease: easeOutCubic,
       },
     },
   };
 
   return (
-    <motion.div variants={variants} className={className}>
+    <motion.div
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      className={className}
+    >
       {children}
     </motion.div>
   );

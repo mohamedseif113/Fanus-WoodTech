@@ -3,8 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { PRODUCTS } from "@/lib/constants/products";
+import { PRODUCTS, getProductContent } from "@/lib/constants/products";
 import { useI18nStore } from "@/store/useI18nStore";
 import { useConfiguratorStore } from "@/store/useConfiguratorStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -19,8 +18,6 @@ import {
   Sparkles,
   ArrowLeft,
   CheckCircle2,
-  Box,
-  Image as ImageIcon,
   ShoppingCart,
   ShieldCheck,
   Truck,
@@ -28,53 +25,42 @@ import {
   Ruler,
   Layers,
   Check,
-  Loader2,
+  Eye,
+  ArrowRight,
 } from "lucide-react";
 import { FadeIn, HoverElevate } from "@/components/ui/motion";
 
-// Dynamic import of 3D Preview
-const ProductPreview3D = dynamic(
-  () =>
-    import("@/components/furniture-3d/ProductPreview3D").then(
-      (mod) => mod.ProductPreview3D
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full min-h-[420px] flex flex-col items-center justify-center bg-stone-100/80 rounded-3xl gap-3">
-        <Loader2 className="w-8 h-8 text-[#3498a7] animate-spin" />
-        <span className="text-xs font-semibold text-stone-600">
-          3D Model Hazırlanıyor...
-        </span>
-      </div>
-    ),
-  }
-);
-
 const AVAILABLE_MATERIALS: {
   id: WoodMaterial;
-  name: string;
+  nameTr: string;
+  nameEn: string;
   color: string;
   isDark?: boolean;
 }[] = [
-  { id: "walnut", name: "Amerikan Ceviz", color: "#61402b", isDark: true },
-  { id: "oak", name: "Doğal Meşe", color: "#c89d66" },
-  { id: "anthracite", name: "Antrasit Lake", color: "#323538", isDark: true },
-  { id: "white", name: "Mat Beyaz", color: "#f5f5f5" },
-  { id: "beech", name: "Açık Kayın", color: "#deb887" },
-  { id: "black", name: "Mat Siyah", color: "#1c1c1c", isDark: true },
+  { id: "walnut", nameTr: "Amerikan Ceviz", nameEn: "American Walnut", color: "#61402b", isDark: true },
+  { id: "oak", nameTr: "Doğal Meşe", nameEn: "Natural Oak", color: "#c89d66" },
+  { id: "anthracite", nameTr: "Antrasit Lake", nameEn: "Anthracite Lacquer", color: "#323538", isDark: true },
+  { id: "white", nameTr: "Mat Beyaz", nameEn: "Matte White", color: "#f5f5f5" },
+  { id: "beech", nameTr: "Açık Kayın", nameEn: "Light Beech", color: "#deb887" },
+  { id: "black", nameTr: "Mat Siyah", nameEn: "Matte Black", color: "#1c1c1c", isDark: true },
 ];
 
-const AVAILABLE_FINISHES: { id: FinishType; label: string; desc: string }[] = [
-  { id: "matte", label: "İpeksi Mat", desc: "Doğal ahşap dokusu, parlama yapmaz" },
-  { id: "satin", label: "Saten Yarı Mat", desc: "Zarif hafif pürüzsüz parlaklık" },
-  { id: "gloss", label: "Parlak Lake", desc: "Yansıtıcı şık lake koruma" },
+const AVAILABLE_FINISHES: {
+  id: FinishType;
+  labelTr: string;
+  labelEn: string;
+}[] = [
+  { id: "matte", labelTr: "İpeksi Mat", labelEn: "Silky Matte" },
+  { id: "satin", labelTr: "Saten Yarı Mat", labelEn: "Satin Semi-Matte" },
+  { id: "gloss", labelTr: "Parlak Lake", labelEn: "Gloss Lacquer" },
 ];
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { t, language } = useI18nStore();
+  const isEn = language === "en";
+
   const {
     setDimensions,
     setMaterial,
@@ -109,13 +95,17 @@ export default function ProductDetailPage() {
     );
   }, [decodedId]);
 
-  // Gallery and 3D preview state
-  const [viewMode, setViewMode] = useState<"3d" | "photo">("3d");
+  // Localized product content (name, description, features)
+  const productContent = useMemo(() => {
+    return getProductContent(product, language);
+  }, [product, language]);
+
+  // Gallery state
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedMaterial, setSelectedMaterial] = useState<WoodMaterial>(
     product.defaultMaterial || "walnut"
   );
   const [selectedFinish, setSelectedFinish] = useState<FinishType>("satin");
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
 
   // High-res gallery images
@@ -127,7 +117,11 @@ export default function ProductDetailPage() {
         "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
       ];
     }
-    return [product.image, product.image, product.image];
+    return [
+      product.image,
+      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+    ];
   }, [product]);
 
   // Real-time price calculation based on chosen material and finish
@@ -143,6 +137,11 @@ export default function ProductDetailPage() {
       backPanel: true,
     });
   }, [product, selectedMaterial, selectedFinish]);
+
+  // Related products from collection
+  const relatedProducts = useMemo(() => {
+    return PRODUCTS.filter((p) => p.id !== product.id).slice(0, 3);
+  }, [product]);
 
   // Navigate to full 3D Configurator with product pre-configured
   const handleCustomizeIn3D = () => {
@@ -163,7 +162,7 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     const config: FurnitureConfiguration = {
       id: `config-${Date.now()}-${product.id}`,
-      name: product.nameKey,
+      name: productContent.name,
       dimensions: product.dimensions,
       shelfCount: product.defaultShelves,
       material: selectedMaterial,
@@ -175,142 +174,101 @@ export default function ProductDetailPage() {
       priceBreakdown,
     };
 
-    addItem(config, product.nameKey, product.categoryKey);
+    addItem(config, productContent.name, product.categoryKey);
     setIsAddedToCart(true);
     setTimeout(() => setIsAddedToCart(false), 2500);
   };
 
-  const isTV = product.categoryKey === "tv-units";
+  const selectedMaterialObj = AVAILABLE_MATERIALS.find((m) => m.id === selectedMaterial);
+  const selectedFinishObj = AVAILABLE_FINISHES.find((f) => f.id === selectedFinish);
 
   return (
-    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 w-full">
+    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 w-full">
       {/* Navigation Breadcrumb */}
-      <FadeIn className="mb-6 flex items-center justify-between">
+      <FadeIn className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <Link
           href="/products"
           className="inline-flex items-center gap-2 text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Tüm Koleksiyona Dön</span>
+          <span>{isEn ? "Back to All Collection" : "Tüm Koleksiyona Dön"}</span>
         </Link>
         <span className="text-xs font-semibold text-stone-400">
-          Ürün Kodu: <span className="font-mono text-stone-700">{product.id}</span>
+          {isEn ? "Product ID:" : "Ürün Kodu:"}{" "}
+          <span className="font-mono text-stone-700">{product.id}</span>
         </span>
       </FadeIn>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
-        {/* Left Column: 3D Viewport & Photo Gallery */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* Left Column: Regular Product Image Gallery (No 3D Viewer) */}
         <FadeIn direction="right" className="lg:col-span-7 space-y-4">
-          {/* Main Visual Display */}
-          <div className="relative rounded-3xl border border-stone-200/90 bg-white shadow-soft-lg overflow-hidden min-h-[460px] flex flex-col">
-            {/* View Mode Switcher (3D vs Photo) */}
-            <div className="absolute top-4 right-4 z-10 bg-white/95 backdrop-blur-md p-1 rounded-2xl border border-stone-200 shadow-soft-sm flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setViewMode("3d")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  viewMode === "3d"
-                    ? "bg-[#3498a7] text-white shadow-sm"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
-                }`}
-              >
-                <Box className="w-3.5 h-3.5" />
-                <span>3D Canlı Model</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("photo")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  viewMode === "photo"
-                    ? "bg-[#3498a7] text-white shadow-sm"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Fotoğraf</span>
-              </button>
+          {/* Main Hero Photo with Zoom on Hover */}
+          <div className="relative rounded-3xl border border-stone-200/90 bg-white shadow-soft-lg overflow-hidden aspect-[4/3] sm:aspect-[16/11] group">
+            <img
+              src={galleryImages[activeImageIndex] || product.image}
+              alt={productContent.name}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            {/* Image counter pill */}
+            <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-bold text-stone-800 border border-stone-200 shadow-soft-sm">
+              {isEn
+                ? `Photo ${activeImageIndex + 1} of ${galleryImages.length}`
+                : `Görsel ${activeImageIndex + 1} / ${galleryImages.length}`}
             </div>
-
-            {/* Viewport Content */}
-            <div className="w-full h-full min-h-[460px] flex-1">
-              {viewMode === "3d" ? (
-                <ProductPreview3D
-                  dimensions={product.dimensions}
-                  material={selectedMaterial}
-                  shelfCount={product.defaultShelves}
-                  doorType={product.defaultDoors}
-                  finish={selectedFinish}
-                  isTV={isTV}
-                />
-              ) : (
-                <div className="w-full h-full min-h-[460px] relative group overflow-hidden bg-stone-100">
-                  <img
-                    src={galleryImages[activeImageIndex]}
-                    alt={product.nameKey}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold text-stone-800 border border-stone-200">
-                    Görsel {activeImageIndex + 1} / {galleryImages.length}
-                  </div>
-                </div>
-              )}
+            {/* Dimensions overlay badge */}
+            <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-[11px] font-bold text-stone-900 border border-stone-200 shadow-soft-sm">
+              {product.dimensions.width} x {product.dimensions.height} x {product.dimensions.depth} cm
             </div>
           </div>
 
-          {/* Gallery Thumbnails */}
-          <div className="grid grid-cols-4 gap-3">
+          {/* Interactive Multi-Angle Gallery Thumbnails */}
+          <div className="grid grid-cols-3 gap-3">
             {galleryImages.map((img, i) => (
               <HoverElevate key={i} yOffset={-2}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveImageIndex(i);
-                    setViewMode("photo");
-                  }}
-                  className={`w-full aspect-[16/10] rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                    viewMode === "photo" && activeImageIndex === i
+                  onClick={() => setActiveImageIndex(i)}
+                  className={`w-full aspect-[16/10] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${
+                    activeImageIndex === i
                       ? "border-[#3498a7] ring-2 ring-[#3498a7]/20 shadow-sm"
                       : "border-stone-200 opacity-80 hover:opacity-100"
                   }`}
                 >
                   <img
                     src={img}
-                    alt={`Thumbnail ${i + 1}`}
+                    alt={`${productContent.name} ${i + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </button>
               </HoverElevate>
             ))}
-            {/* Quick 3D button thumbnail */}
-            <HoverElevate yOffset={-2}>
-              <button
-                type="button"
-                onClick={() => setViewMode("3d")}
-                className={`w-full aspect-[16/10] rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
-                  viewMode === "3d"
-                    ? "border-[#3498a7] bg-[#e5f5f7] text-[#196b77] shadow-sm font-bold"
-                    : "border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100 font-medium"
-                }`}
-              >
-                <Box className="w-4 h-4 text-[#3498a7]" />
-                <span className="text-[10px]">3D Görünüm</span>
-              </button>
-            </HoverElevate>
           </div>
 
-          {/* Modular Dimensions Pill Cards */}
+          {/* Dimension Metric Cards */}
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/90 text-center">
-              <span className="text-[11px] text-stone-500 font-medium block">Genişlik</span>
-              <span className="text-base font-extrabold text-stone-900">{product.dimensions.width} cm</span>
+              <span className="text-[11px] text-stone-500 font-medium block">
+                {isEn ? "Width" : "Genişlik"}
+              </span>
+              <span className="text-base font-extrabold text-stone-900">
+                {product.dimensions.width} cm
+              </span>
             </div>
             <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/90 text-center">
-              <span className="text-[11px] text-stone-500 font-medium block">Yükseklik</span>
-              <span className="text-base font-extrabold text-stone-900">{product.dimensions.height} cm</span>
+              <span className="text-[11px] text-stone-500 font-medium block">
+                {isEn ? "Height" : "Yükseklik"}
+              </span>
+              <span className="text-base font-extrabold text-stone-900">
+                {product.dimensions.height} cm
+              </span>
             </div>
             <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/90 text-center">
-              <span className="text-[11px] text-stone-500 font-medium block">Derinlik</span>
-              <span className="text-base font-extrabold text-stone-900">{product.dimensions.depth} cm</span>
+              <span className="text-[11px] text-stone-500 font-medium block">
+                {isEn ? "Depth" : "Derinlik"}
+              </span>
+              <span className="text-base font-extrabold text-stone-900">
+                {product.dimensions.depth} cm
+              </span>
             </div>
           </div>
         </FadeIn>
@@ -321,15 +279,19 @@ export default function ProductDetailPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-semibold text-[#196b77] bg-[#e5f5f7] px-2.5 py-0.5 rounded-full border border-[#3498a7]/30 tracking-woodcoder-tag uppercase">
-                {product.categoryKey === "bookshelves" ? "Modüler Kitaplık Serisi" : "Fanus Mimari Seri"}
+                {product.categoryKey === "bookshelves"
+                  ? isEn ? "Modular Bookshelf Series" : "Modüler Kitaplık Serisi"
+                  : isEn ? "Fanus Architectural Series" : "Fanus Mimari Seri"}
               </span>
-              <span className="text-xs text-stone-400 font-medium">• 100% Masif & E1 Ahşap</span>
+              <span className="text-xs text-stone-400 font-medium">
+                • {isEn ? "100% Solid & E1 Panels" : "100% Masif & E1 Ahşap"}
+              </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
-              {product.nameKey}
+              {productContent.name}
             </h1>
             <p className="text-sm text-stone-600 mt-3 leading-relaxed font-normal">
-              {product.descriptionKey}
+              {productContent.description}
             </p>
           </div>
 
@@ -346,13 +308,13 @@ export default function ProductDetailPage() {
               </div>
               <div className="text-right">
                 <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-bold">
-                  Stokta Hazır Üretim
+                  {isEn ? "Made to Order • In Stock" : "Stokta Hazır Üretim"}
                 </span>
               </div>
             </div>
             <div className="text-[11px] text-stone-500 pt-1 border-t border-stone-200/80 flex items-center justify-between">
-              <span>KDV Dahil</span>
-              <span>Ücretsiz Adrese Teslimat & Montaj</span>
+              <span>{isEn ? "VAT Included" : "KDV Dahil"}</span>
+              <span>{isEn ? "Free Delivery & Assembly" : "Ücretsiz Teslimat & Montaj"}</span>
             </div>
           </div>
 
@@ -360,10 +322,10 @@ export default function ProductDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-stone-900">
-                Ahşap & Yüzey Malzemesi:
+                {isEn ? "Wood & Panel Material:" : "Ahşap & Yüzey Malzemesi:"}
               </label>
               <span className="text-xs font-semibold text-[#196b77]">
-                {AVAILABLE_MATERIALS.find((m) => m.id === selectedMaterial)?.name}
+                {isEn ? selectedMaterialObj?.nameEn : selectedMaterialObj?.nameTr}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -374,7 +336,7 @@ export default function ProductDetailPage() {
                     key={mat.id}
                     type="button"
                     onClick={() => setSelectedMaterial(mat.id)}
-                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                    className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all min-h-[44px] ${
                       isSelected
                         ? "border-[#3498a7] bg-[#e5f5f7] shadow-sm ring-1 ring-[#3498a7]"
                         : "border-stone-200 hover:border-stone-300 bg-white"
@@ -389,7 +351,7 @@ export default function ProductDetailPage() {
                       )}
                     </span>
                     <span className="text-xs font-bold text-stone-800 truncate">
-                      {mat.name}
+                      {isEn ? mat.nameEn : mat.nameTr}
                     </span>
                   </button>
                 );
@@ -401,10 +363,10 @@ export default function ProductDetailPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-stone-900">
-                Cila & Bitiş Tipi:
+                {isEn ? "Topcoat & Finish:" : "Cila & Bitiş Tipi:"}
               </label>
               <span className="text-xs font-medium text-stone-500">
-                {AVAILABLE_FINISHES.find((f) => f.id === selectedFinish)?.label}
+                {isEn ? selectedFinishObj?.labelEn : selectedFinishObj?.labelTr}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -415,13 +377,13 @@ export default function ProductDetailPage() {
                     key={fin.id}
                     type="button"
                     onClick={() => setSelectedFinish(fin.id)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
                       isSelected
                         ? "border-[#3498a7] bg-[#3498a7] text-white shadow-sm"
                         : "border-stone-200 text-stone-700 bg-white hover:bg-stone-50"
                     }`}
                   >
-                    {fin.label}
+                    {isEn ? fin.labelEn : fin.labelTr}
                   </button>
                 );
               })}
@@ -430,15 +392,19 @@ export default function ProductDetailPage() {
 
           {/* Primary Action Buttons */}
           <div className="space-y-3 pt-2">
-            {/* 3D Configurator Button */}
+            {/* 3D Configurator CTA */}
             <HoverElevate yOffset={-3}>
               <button
                 type="button"
                 onClick={handleCustomizeIn3D}
-                className="w-full py-4 px-6 bg-[#3498a7] hover:bg-[#287e8b] text-white font-bold text-sm rounded-2xl shadow-soft-md hover:shadow-soft-lg flex items-center justify-center gap-2.5 transition-all group active:scale-[0.99]"
+                className="w-full py-4 px-6 bg-[#3498a7] hover:bg-[#287e8b] text-white font-bold text-sm rounded-2xl shadow-soft-md hover:shadow-soft-lg flex items-center justify-center gap-2.5 transition-all group active:scale-[0.99] min-h-[48px]"
               >
                 <Sparkles className="w-5 h-5 text-amber-200 group-hover:rotate-12 transition-transform" />
-                <span>3D Stüdyoda Özelleştir (Konfigüratör)</span>
+                <span>
+                  {isEn
+                    ? "Customize in 3D Configurator"
+                    : "3D Stüdyoda Özelleştir (Konfigüratör)"}
+                </span>
               </button>
             </HoverElevate>
 
@@ -446,14 +412,18 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={handleAddToCart}
-              className={`w-full py-3.5 px-6 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99] ${
+              className={`w-full py-3.5 px-6 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99] min-h-[46px] ${
                 isAddedToCart
                   ? "border-emerald-600 bg-emerald-50 text-emerald-800"
                   : "border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white bg-white"
               }`}
             >
               <ShoppingCart className="w-4 h-4" />
-              <span>{isAddedToCart ? "Sepete Eklendi ✓" : "Bu Ölçü ve Malzemede Sepete Ekle"}</span>
+              <span>
+                {isAddedToCart
+                  ? isEn ? "Added to Cart ✓" : "Sepete Eklendi ✓"
+                  : isEn ? "Add to Cart with Selected Specs" : "Bu Ölçü ve Malzemede Sepete Ekle"}
+              </span>
             </button>
           </div>
 
@@ -461,10 +431,12 @@ export default function ProductDetailPage() {
           <div className="p-4 rounded-2xl bg-wood-50/70 border border-wood-200/80 space-y-2.5">
             <div className="text-xs font-bold text-wood-900 tracking-tight flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-wood-700" />
-              <span>Modüler Bileşenler & Donanım</span>
+              <span>
+                {isEn ? "Modular Components & Engineering" : "Modüler Bileşenler & Donanım"}
+              </span>
             </div>
             <ul className="space-y-2 text-xs text-stone-700">
-              {product.features.map((feat, i) => (
+              {productContent.features.map((feat, i) => (
                 <li key={i} className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                   <span className="font-medium">{feat}</span>
@@ -472,76 +444,178 @@ export default function ProductDetailPage() {
               ))}
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span className="font-medium">18mm E1 Sertifikalı Yoğun Gövde Panelleri</span>
+                <span className="font-medium">
+                  {isEn
+                    ? "18mm E1 Certified High-Density Structural Panels"
+                    : "18mm E1 Sertifikalı Yoğun Gövde Panelleri"}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span className="font-medium">Modüler Ayarlanabilir Ağır Hizmet Raf Taşıyıcıları</span>
+                <span className="font-medium">
+                  {isEn
+                    ? "Modular Adjustable Heavy-Duty Shelf Pins"
+                    : "Modüler Ayarlanabilir Ağır Hizmet Raf Taşıyıcıları"}
+                </span>
               </li>
             </ul>
           </div>
 
-          {/* Technical Specifications Accordion / Table */}
+          {/* Technical Specifications */}
           <div className="border-t border-stone-200 pt-5 space-y-3">
             <h3 className="font-extrabold text-stone-900 text-sm tracking-tight flex items-center gap-1.5">
               <Ruler className="w-4 h-4 text-stone-600" />
-              <span>Teknik Özellikler & Detaylar</span>
+              <span>
+                {isEn ? "Technical Specifications" : "Teknik Özellikler & Detaylar"}
+              </span>
             </h3>
 
             <div className="space-y-2 text-xs">
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Standart Ölçüler:</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Dimensions:" : "Standart Ölçüler:"}
+                </span>
                 <span className="font-bold text-stone-900">
                   {product.dimensions.width} x {product.dimensions.height} x {product.dimensions.depth} cm
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Raf Adedi & Modül:</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Shelving Module:" : "Raf Adedi & Modül:"}
+                </span>
                 <span className="font-bold text-stone-900">
-                  {product.defaultShelves} Kademeli Eşit Açık Raf
+                  {product.defaultShelves}{" "}
+                  {isEn ? "Tier Modular Shelving" : "Kademeli Eşit Açık Raf"}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Kapak Yapısı:</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Door Configuration:" : "Kapak Yapısı:"}
+                </span>
                 <span className="font-bold text-stone-900">
-                  {product.defaultDoors === "none" ? "Açık Mimarisi (Kapaksız)" : "Modüler Ahşap Kapak"}
+                  {product.defaultDoors === "none"
+                    ? isEn ? "Open Architecture (Doorless)" : "Açık Mimarisi (Kapaksız)"
+                    : isEn ? "Modular Wooden Doors" : "Modüler Ahşap Kapak"}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Taşıma Kapasitesi:</span>
-                <span className="font-bold text-stone-900">Raf başına 35 kg (Toplam 210 kg)</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Load Capacity:" : "Taşıma Kapasitesi:"}
+                </span>
+                <span className="font-bold text-stone-900">
+                  {isEn ? "35 kg per shelf (210 kg total)" : "Raf başına 35 kg (Toplam 210 kg)"}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Üretim Süresi:</span>
-                <span className="font-bold text-stone-900">7 - 10 İş Günü</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Production Time:" : "Üretim Süresi:"}
+                </span>
+                <span className="font-bold text-stone-900">
+                  {isEn ? "7 - 10 Business Days" : "7 - 10 İş Günü"}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500 font-normal">Fanus Garantisi:</span>
-                <span className="font-bold text-stone-900">5 Yıl Resmi Üretici Garantisi</span>
+                <span className="text-stone-500 font-normal">
+                  {isEn ? "Warranty:" : "Fanus Garantisi:"}
+                </span>
+                <span className="font-bold text-stone-900">
+                  {isEn ? "5-Year Official Manufacturer Warranty" : "5 Yıl Resmi Üretici Garantisi"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Trust badges */}
+          {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-2 pt-2 text-[11px] text-stone-500 text-center">
             <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 flex flex-col items-center gap-1">
               <Truck className="w-4 h-4 text-[#3498a7]" />
-              <span className="font-bold text-stone-800">Ücretsiz Teslim</span>
-              <span>Tüm Türkiye</span>
+              <span className="font-bold text-stone-800">
+                {isEn ? "Free Delivery" : "Ücretsiz Teslim"}
+              </span>
+              <span>{isEn ? "Nationwide" : "Tüm Türkiye"}</span>
             </div>
             <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 flex flex-col items-center gap-1">
               <ShieldCheck className="w-4 h-4 text-[#3498a7]" />
-              <span className="font-bold text-stone-800">5 Yıl Garanti</span>
-              <span>Masif & Mekanizma</span>
+              <span className="font-bold text-stone-800">
+                {isEn ? "5-Yr Warranty" : "5 Yıl Garanti"}
+              </span>
+              <span>{isEn ? "Timber & Hardware" : "Masif & Mekanizma"}</span>
             </div>
             <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 flex flex-col items-center gap-1">
               <RotateCw className="w-4 h-4 text-[#3498a7]" />
-              <span className="font-bold text-stone-800">Modüler Uyum</span>
-              <span>Genişletilebilir</span>
+              <span className="font-bold text-stone-800">
+                {isEn ? "Modular" : "Modüler Uyum"}
+              </span>
+              <span>{isEn ? "Expandable" : "Genişletilebilir"}</span>
             </div>
           </div>
         </FadeIn>
       </div>
+
+      {/* Related Products Section */}
+      <section className="mt-16 sm:mt-24 pt-12 border-t border-stone-200">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="text-xs font-semibold text-wood-700 tracking-woodcoder-tag uppercase mb-1">
+              {isEn ? "Complementary Designs" : "Tamamlayıcı Modeller"}
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+              {isEn ? "Related Modular Designs" : "Benzer Modüler Tasarımlar"}
+            </h2>
+          </div>
+          <Link
+            href="/products"
+            className="text-xs font-bold text-wood-800 hover:text-wood-950 flex items-center gap-1 group transition-colors"
+          >
+            <span>{isEn ? "View All" : "Tümünü Gör"}</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {relatedProducts.map((relProd) => {
+            const relContent = getProductContent(relProd, language);
+            return (
+              <HoverElevate key={relProd.id} yOffset={-4}>
+                <div className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col h-full group">
+                  <div className="aspect-[16/10] w-full overflow-hidden relative">
+                    <img
+                      src={relProd.image}
+                      alt={relContent.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-bold text-stone-900 border border-stone-200">
+                      {relProd.dimensions.width}x{relProd.dimensions.height}x{relProd.dimensions.depth} cm
+                    </div>
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h3 className="font-extrabold text-stone-900 text-sm group-hover:text-wood-800 transition-colors">
+                        {relContent.name}
+                      </h3>
+                      <p className="text-xs text-stone-500 line-clamp-2 mt-1">
+                        {relContent.description}
+                      </p>
+                    </div>
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                      <span className="text-sm font-extrabold text-stone-900">
+                        {formatCurrency(relProd.basePrice, language)}
+                      </span>
+                      <Link
+                        href={`/products/${relProd.id}`}
+                        className="px-3 py-1.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 text-xs font-bold transition-all flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{isEn ? "View" : "İncele"}</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </HoverElevate>
+            );
+          })}
+        </div>
+      </section>
     </main>
   );
 }

@@ -8,13 +8,14 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { FadeIn, StaggerContainer, StaggerItem, HoverElevate } from "@/components/ui/motion";
 
 export default function CategoriesPage() {
-  const { t } = useI18nStore();
+  const { t, language } = useI18nStore();
+  const isEn = language === "en";
 
   return (
     <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
       <FadeIn className="mb-12 space-y-2">
         <div className="text-xs font-semibold text-wood-700 tracking-woodcoder-tag uppercase">
-          Modüler Yaşam Alanları
+          {isEn ? "Modular Living Spaces" : "Modüler Yaşam Alanları"}
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight">
           {t.categories.title}
@@ -42,7 +43,7 @@ export default function CategoriesPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/60 via-transparent to-transparent" />
                     <div className="absolute bottom-3.5 left-4 text-white">
                       <span className="text-[11px] font-bold bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-md">
-                        {c.productCount} Temel Tasarım
+                        {c.productCount} {isEn ? "Base Designs" : "Temel Tasarım"}
                       </span>
                     </div>
                   </div>
@@ -60,18 +61,18 @@ export default function CategoriesPage() {
                     <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
                       <Link
                         href={`/products?category=${c.id}`}
-                        className="text-xs font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1 group/link transition-colors"
+                        className="text-xs font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1 group/link transition-colors min-h-[36px]"
                       >
-                        <span>Modelleri İncele</span>
+                        <span>{isEn ? "Explore Models" : "Modelleri İncele"}</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
                       </Link>
 
                       <Link
                         href="/configurator"
-                        className="px-3.5 py-1.5 bg-wood-800 hover:bg-wood-900 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+                        className="px-3.5 py-1.5 bg-wood-800 hover:bg-wood-900 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95 min-h-[36px]"
                       >
                         <Sparkles className="w-3 h-3 text-amber-300" />
-                        <span>3D Tasarla</span>
+                        <span>{isEn ? "Design in 3D" : "3D Tasarla"}</span>
                       </Link>
                     </div>
                   </div>

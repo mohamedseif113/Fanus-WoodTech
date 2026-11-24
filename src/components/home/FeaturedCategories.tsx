@@ -8,7 +8,8 @@ import { ArrowUpRight } from "lucide-react";
 import { FadeIn, StaggerContainer, StaggerItem, HoverElevate } from "@/components/ui/motion";
 
 export const FeaturedCategories: React.FC = () => {
-  const { t } = useI18nStore();
+  const { t, language } = useI18nStore();
+  const isEn = language === "en";
 
   return (
     <section className="py-16 sm:py-24 bg-white border-b border-stone-200">
@@ -25,9 +26,9 @@ export const FeaturedCategories: React.FC = () => {
           </div>
           <Link
             href="/categories"
-            className="text-xs font-bold text-wood-800 hover:text-wood-950 flex items-center gap-1 group transition-colors"
+            className="text-xs font-bold text-wood-800 hover:text-wood-950 flex items-center gap-1 group transition-colors min-h-[36px]"
           >
-            <span>Tüm Kategorileri Görüntüle</span>
+            <span>{isEn ? "View All Categories" : "Tüm Kategorileri Görüntüle"}</span>
             <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </Link>
         </FadeIn>
@@ -54,7 +55,7 @@ export const FeaturedCategories: React.FC = () => {
                           {t.categories[cat.nameKey as keyof typeof t.categories] || cat.nameKey}
                         </h3>
                         <p className="text-[11px] text-stone-300 font-normal">
-                          {cat.productCount} Temel Model
+                          {cat.productCount} {isEn ? "Core Models" : "Temel Model"}
                         </p>
                       </div>
                       <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-wood-700 transition-colors">

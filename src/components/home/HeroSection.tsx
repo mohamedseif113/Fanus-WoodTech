@@ -16,7 +16,8 @@ import {
 import { easeOutCubic, HoverElevate } from "@/components/ui/motion";
 
 export const HeroSection: React.FC = () => {
-  const { t } = useI18nStore();
+  const { t, language } = useI18nStore();
+  const isEn = language === "en";
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#FAF8F5] via-[#F5F2EB] to-[#FAF8F5] pt-12 pb-20 lg:pt-16 lg:pb-28 border-b border-stone-200/80">
@@ -158,29 +159,30 @@ export const HeroSection: React.FC = () => {
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   <span className="text-xs font-semibold text-stone-900">
-                    WebGL 3D Canlı Motor
+                    {isEn ? "WebGL 3D Live Engine" : "WebGL 3D Canlı Motor"}
                   </span>
                 </motion.div>
 
                 {/* Bottom Overlay Info */}
                 <div className="absolute bottom-5 left-5 right-5 text-white space-y-2">
                   <div className="text-[11px] font-semibold text-amber-300 tracking-woodcoder-tag uppercase">
-                    Öne Çıkan Vitrin Modülü
+                    {isEn ? "Featured Showcase Module" : "Öne Çıkan Vitrin Modülü"}
                   </div>
                   <div className="flex justify-between items-end">
                     <div>
                       <h3 className="font-bold text-lg text-white" suppressHydrationWarning>
-                        <span translate="no" className="notranslate" suppressHydrationWarning>Fanus</span> Master Vitrin Dolabı
+                        <span translate="no" className="notranslate" suppressHydrationWarning>Fanus</span>{" "}
+                        {isEn ? "Master Display Cabinet" : "Master Vitrin Dolabı"}
                       </h3>
                       <p className="text-xs text-stone-300">
-                        120 x 180 x 40 cm • Doğal Meşe
+                        120 x 180 x 40 cm • {isEn ? "Natural Oak" : "Doğal Meşe"}
                       </p>
                     </div>
                     <Link
                       href="/configurator"
                       className="px-3.5 py-2 bg-white text-stone-900 font-bold text-xs rounded-xl shadow-soft-sm hover:bg-wood-100 transition-all flex items-center gap-1.5 active:scale-95"
                     >
-                      <span>3D Özelleştir</span>
+                      <span>{isEn ? "Customize 3D" : "3D Özelleştir"}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>

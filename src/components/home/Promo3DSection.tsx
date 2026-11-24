@@ -15,7 +15,8 @@ import {
 import { FadeIn, HoverElevate } from "@/components/ui/motion";
 
 export const Promo3DSection: React.FC = () => {
-  const { t } = useI18nStore();
+  const { t, language } = useI18nStore();
+  const isEn = language === "en";
 
   return (
     <section className="py-16 sm:py-24 bg-charcoal-950 text-white overflow-hidden relative border-b border-stone-800">
@@ -101,18 +102,25 @@ export const Promo3DSection: React.FC = () => {
                 {/* Exploded View Indicator Badge */}
                 <div className="absolute top-4 left-4 bg-amber-500/90 text-charcoal-950 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
                   <Layers className="w-4 h-4" />
-                  <span>İnteraktif Patlatılmış Görünüm</span>
+                  <span>{isEn ? "Interactive Exploded View" : "İnteraktif Patlatılmış Görünüm"}</span>
                 </div>
 
                 {/* Bottom interactive card */}
                 <div className="absolute bottom-4 left-4 right-4 bg-stone-900/90 backdrop-blur-md p-4 rounded-xl border border-stone-700 text-white flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold tracking-tight">Gerçek Zamanlı Parametrik Geometri</div>
-                    <div className="text-[11px] text-stone-400 font-normal">18mm E1 Gövde • 360° Döndürme • Anlık Fiyat</div>
+                    <div className="text-xs font-bold tracking-tight">
+                      {isEn ? "Real-Time Parametric Geometry" : "Gerçek Zamanlı Parametrik Geometri"}
+                    </div>
+                    <div className="text-[11px] text-stone-400 font-normal">
+                      {isEn
+                        ? "18mm E1 Carcass • 360° Orbit • Instant Price"
+                        : "18mm E1 Gövde • 360° Döndürme • Anlık Fiyat"}
+                    </div>
                   </div>
                   <Link
                     href="/configurator"
                     className="p-2 bg-wood-700 hover:bg-wood-600 rounded-lg text-white transition-all active:scale-95"
+                    aria-label={isEn ? "Open 3D Studio" : "3D Stüdyoyu Aç"}
                   >
                     <Maximize2 className="w-4 h-4" />
                   </Link>

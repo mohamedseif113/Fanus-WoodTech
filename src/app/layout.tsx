@@ -35,9 +35,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" translate="no" className="notranslate" suppressHydrationWarning>
+    <html lang="tr" translate="no" className="notranslate overflow-x-hidden" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} font-sans min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased notranslate`}
+        className={`${poppins.variable} font-sans min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased notranslate overflow-x-hidden w-full max-w-full`}
         translate="no"
         suppressHydrationWarning
       >

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useI18nStore } from "@/store/useI18nStore";
 import { useConfiguratorStore } from "@/store/useConfiguratorStore";
-import { PRODUCTS, CATEGORIES } from "@/lib/constants/products";
+import { PRODUCTS, CATEGORIES, getProductContent } from "@/lib/constants/products";
 import { formatCurrency } from "@/lib/utils";
 import {
   Search,
@@ -13,31 +13,64 @@ import {
   ArrowUpDown,
   Eye,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { FadeIn, StaggerContainer, StaggerItem, HoverElevate } from "@/components/ui/motion";
 
 function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get("category") || "all";
 
   const { t, language } = useI18nStore();
   const { setDimensions, setMaterial, setShelfCount, setDoorType } =
     useConfiguratorStore();
 
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"popular" | "price-asc" | "price-desc" | "name">("popular");
 
+  // Keep selectedCategory in sync with URL searchParams (e.g. ?category=bookshelves)
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    } else {
+      setSelectedCategory("all");
+    }
+  }, [searchParams]);
+
+  // Handle switching categories & updating URL without full page reload
+  const handleSelectCategory = (catId: string) => {
+    setSelectedCategory(catId);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (catId === "all") {
+        url.searchParams.delete("category");
+      } else {
+        url.searchParams.set("category", catId);
+      }
+      router.replace(url.pathname + (url.search ? url.search : ""), { scroll: false });
+    }
+  };
+
+  // Pure filtering without mutating the source PRODUCTS dataset
   const filteredProducts = useMemo(() => {
     let result = [...PRODUCTS];
 
-    if (selectedCategory !== "all") {
-      result = result.filter((p) => p.categoryKey === selectedCategory);
+    if (selectedCategory && selectedCategory !== "all") {
+      const normalizedTarget = selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, "");
+      result = result.filter((p) => {
+        const normalizedCat = p.categoryKey.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return (
+          p.categoryKey === selectedCategory ||
+          normalizedCat === normalizedTarget ||
+          p.categoryKey.toLowerCase() === selectedCategory.toLowerCase()
+        );
+      });
     }
 
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       result = result.filter(
         (p) =>
           p.nameKey.toLowerCase().includes(q) ||
@@ -57,11 +90,14 @@ function ProductsContent() {
   }, [selectedCategory, searchQuery, sortBy]);
 
   const handleCustomizeProduct = (product: (typeof PRODUCTS)[0]) => {
+    const isTV = product.categoryKey === "tv-units";
+    const targetModel = isTV ? "tv-stand" : "cabinet";
+
     setDimensions(product.dimensions);
     setMaterial(product.defaultMaterial);
     setShelfCount(product.defaultShelves);
     setDoorType(product.defaultDoors);
-    router.push("/configurator");
+    router.push(`/configurator?model=${targetModel}&product=${product.id}`);
   };
 
   return (
@@ -93,8 +129,9 @@ function ProductsContent() {
         {/* Category Filter Buttons */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar py-1">
           <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+            type="button"
+            onClick={() => handleSelectCategory("all")}
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
               selectedCategory === "all"
                 ? "bg-wood-800 text-white shadow-sm"
                 : "bg-stone-100 text-stone-700 hover:bg-stone-200"
@@ -105,8 +142,9 @@ function ProductsContent() {
           {CATEGORIES.map((c) => (
             <button
               key={c.id}
-              onClick={() => setSelectedCategory(c.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+              type="button"
+              onClick={() => handleSelectCategory(c.id)}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
                 selectedCategory === c.id
                   ? "bg-wood-800 text-white shadow-sm"
                   : "bg-stone-100 text-stone-700 hover:bg-stone-200"
@@ -135,87 +173,118 @@ function ProductsContent() {
 
       {/* Results Count */}
       <div className="text-xs text-stone-500 mb-6 font-medium">
-        Toplam <span className="font-bold text-stone-800">{filteredProducts.length}</span> {t.products.foundProducts}
+        {language === "en"
+          ? `Total ${filteredProducts.length} products found`
+          : `Toplam ${filteredProducts.length} ${t.products.foundProducts}`}
       </div>
 
-      {/* Products Stagger Grid */}
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredProducts.map((prod) => (
-          <StaggerItem key={prod.id}>
-            <HoverElevate yOffset={-6} className="h-full">
-              <div className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-soft-sm hover:shadow-soft-lg transition-all duration-300 flex flex-col group h-full">
-                {/* Image */}
-                <div className="aspect-[16/11] w-full overflow-hidden relative">
-                  <img
-                    src={prod.image}
-                    alt={prod.nameKey}
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11px] font-bold text-stone-900 border border-stone-200 shadow-soft-sm">
-                    {prod.dimensions.width}x{prod.dimensions.height}x{prod.dimensions.depth} cm
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-1.5">
-                    <Link href={`/products/${prod.id}`}>
-                      <h3 className="font-extrabold text-stone-900 text-lg group-hover:text-wood-800 transition-colors tracking-tight">
-                        {prod.nameKey}
-                      </h3>
-                    </Link>
-                    <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed font-normal">
-                      {prod.descriptionKey}
-                    </p>
-
-                    {/* Features pills */}
-                    <div className="flex flex-wrap gap-1 pt-2">
-                      {prod.features.slice(0, 2).map((f, i) => (
-                        <span
-                          key={i}
-                          className="bg-stone-50 border border-stone-200 text-stone-600 text-[10px] px-2 py-0.5 rounded-md font-medium"
-                        >
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Price & Action */}
-                  <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-stone-400 block font-medium">
-                        {t.products.startingFrom}
-                      </span>
-                      <span className="text-base font-extrabold text-stone-900">
-                        {formatCurrency(prod.basePrice, language)}
-                      </span>
+      {/* Empty State */}
+      {filteredProducts.length === 0 ? (
+        <div className="p-12 text-center bg-stone-50 rounded-3xl border border-stone-200/90 space-y-4 max-w-md mx-auto my-12">
+          <p className="text-sm text-stone-600 font-medium">
+            {language === "en"
+              ? "No products found in the selected category or search filter."
+              : "Seçilen kategoride veya arama kriterinde ürün bulunamadı."}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              handleSelectCategory("all");
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-wood-800 text-white text-xs font-bold rounded-xl hover:bg-wood-900 transition-all shadow-sm min-h-[44px]"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>{language === "en" ? "Show All Products" : "Tüm Ürünleri Göster"}</span>
+          </button>
+        </div>
+      ) : (
+        /* Products Stagger Grid with explicit key to ensure re-animation on category changes */
+        <StaggerContainer
+          key={`${selectedCategory}-${searchQuery}-${sortBy}`}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {filteredProducts.map((prod) => {
+            const content = getProductContent(prod, language);
+            return (
+              <StaggerItem key={prod.id}>
+                <HoverElevate yOffset={-6} className="h-full">
+                  <div className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-soft-sm hover:shadow-soft-lg transition-all duration-300 flex flex-col group h-full">
+                    {/* Image */}
+                    <div className="aspect-[16/11] w-full overflow-hidden relative">
+                      <img
+                        src={prod.image}
+                        alt={content.name}
+                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                      />
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11px] font-bold text-stone-900 border border-stone-200 shadow-soft-sm">
+                        {prod.dimensions.width}x{prod.dimensions.height}x{prod.dimensions.depth} cm
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/products/${prod.id}`}
-                        className="p-2 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 transition-all active:scale-95"
-                        title={t.common.viewDetails}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
+                    {/* Content */}
+                    <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-1.5">
+                        <Link href={`/products/${prod.id}`}>
+                          <h3 className="font-extrabold text-stone-900 text-lg group-hover:text-wood-800 transition-colors tracking-tight">
+                            {content.name}
+                          </h3>
+                        </Link>
+                        <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed font-normal">
+                          {content.description}
+                        </p>
 
-                      <button
-                        onClick={() => handleCustomizeProduct(prod)}
-                        className="px-3.5 py-2 bg-wood-800 hover:bg-wood-900 text-white font-bold text-xs rounded-xl shadow-soft-sm flex items-center gap-1.5 transition-all active:scale-95"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        <span>{t.products.customizeIn3D}</span>
-                      </button>
+                        {/* Features pills */}
+                        <div className="flex flex-wrap gap-1 pt-2">
+                          {content.features.slice(0, 2).map((f, i) => (
+                            <span
+                              key={i}
+                              className="bg-stone-50 border border-stone-200 text-stone-600 text-[10px] px-2 py-0.5 rounded-md font-medium"
+                            >
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Price & Action */}
+                      <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-stone-400 block font-medium">
+                            {t.products.startingFrom}
+                          </span>
+                          <span className="text-base font-extrabold text-stone-900">
+                            {formatCurrency(prod.basePrice, language)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/products/${prod.id}`}
+                            className="p-2 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-50 transition-all active:scale-95 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                            title={t.common.viewDetails}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCustomizeProduct(prod)}
+                            className="px-3.5 py-2 bg-wood-800 hover:bg-wood-900 text-white font-bold text-xs rounded-xl shadow-soft-sm flex items-center gap-1.5 transition-all active:scale-95 min-h-[40px]"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                            <span>{t.products.customizeIn3D}</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </HoverElevate>
-          </StaggerItem>
-        ))}
-      </StaggerContainer>
+                </HoverElevate>
+              </StaggerItem>
+            );
+          })}
+        </StaggerContainer>
+      )}
     </main>
   );
 }

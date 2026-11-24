@@ -62,6 +62,12 @@ export interface CartItem {
   image?: string;
 }
 
+export interface ProductTranslation {
+  name: string;
+  description: string;
+  features: string[];
+}
+
 export interface Product {
   id: string;
   nameKey: string;
@@ -74,6 +80,10 @@ export interface Product {
   defaultShelves: number;
   defaultDoors: DoorConfiguration;
   features: string[];
+  translations?: {
+    tr: ProductTranslation;
+    en: ProductTranslation;
+  };
 }
 
 export interface Category {
