@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Environment, useTexture } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Cabinet3D } from "./Cabinet3D";
@@ -66,6 +66,49 @@ function CameraController({ is2D, isTVStand }: CameraControllerProps) {
   );
 }
 
+/**
+ * Woodcoder-matching showroom: BoxGeometry room with real wood floor
+ * and ribbed wall textures, plus studio HDR environment lighting.
+ * Face order for BoxGeometry material array:
+ *   [+x right, -x left, +y top(ceiling), -y bottom(floor), +z front, -z back]
+ * Woodcoder mapping: [wall_a, wall_a, wall_b, floor_z, wall_b, wall_b]
+ */
+function ShowroomEnvironment() {
+  const [wallTexA, wallTexB, floorTex] = useTexture([
+    "/wall_a.webp",
+    "/wall_b.webp",
+    "/floor_z.webp",
+  ]);
+
+  // Configure repeat and wrapping
+  [wallTexA, wallTexB].forEach((tex) => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(50, 50);
+  });
+  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+  floorTex.repeat.set(20, 20);
+
+  // Room box: 40×15×40 Three.js units, viewed from inside (BackSide)
+  // Positioned so floor (bottom face, y=-7.5 in local space) sits at world y=0
+  return (
+    <mesh position={[0, 7.5, 0]} receiveShadow>
+      <boxGeometry args={[40, 15, 40]} />
+      {/* +x right wall  → wall_a */}
+      <meshStandardMaterial attach="material-0" map={wallTexA} side={THREE.BackSide} roughness={0.9} metalness={0} />
+      {/* -x left wall   → wall_a */}
+      <meshStandardMaterial attach="material-1" map={wallTexA} side={THREE.BackSide} roughness={0.9} metalness={0} />
+      {/* +y ceiling      → wall_b */}
+      <meshStandardMaterial attach="material-2" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
+      {/* -y floor        → floor_z */}
+      <meshStandardMaterial attach="material-3" map={floorTex} side={THREE.BackSide} roughness={0.6} metalness={0.02} />
+      {/* +z front wall   → wall_b */}
+      <meshStandardMaterial attach="material-4" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
+      {/* -z back wall    → wall_b */}
+      <meshStandardMaterial attach="material-5" map={wallTexB} side={THREE.BackSide} roughness={0.9} metalness={0} />
+    </mesh>
+  );
+}
+
 interface ConfiguratorCanvasProps {
   showDimensions?: boolean;
   activeModel?: "tv-stand" | "cabinet";
@@ -86,28 +129,30 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
   const isExploded = isTV ? tvState.explodedView : cabinetState.explodedView;
 
   const currentW = isTV ? tvState.dimensions.width / 100 : cabinetState.dimensions.width / 100;
-  const humanPosition: [number, number, number] = [-currentW / 2 - 0.42, 0, 0.1];
+  const humanPosition: [number, number, number] = [-currentW / 2 - 0.52, 0, 0.0];
 
   const tvTotalHeight =
     tvState.dimensions.height +
     (tvState.upperSection !== "none" ? tvState.dimensions.upperHeight : 0);
 
   return (
-    <div className="w-full h-full relative select-none bg-[#ded7cb]">
+    <div className="w-full h-full relative select-none">
       <Canvas
         shadows
-        camera={{ position: [2.4, 1.45, 2.7], fov: 45 }}
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+        camera={{ position: [2.4, 1.45, 2.7], fov: 45, far: 100 }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         className="canvas-3d-cursor"
       >
         <CameraController is2D={is2D} isTVStand={isTV} />
 
-        {/* Studio Showroom Lighting matching Woodcoder reference */}
-        <ambientLight intensity={0.72} color="#ffffff" />
+        {/* Studio HDR environment lighting — matches Woodcoder studio.hdr */}
+        <Environment files="/studio.hdr" />
+
+        {/* Key directional light for shadow casting (Environment alone doesn't cast shadows) */}
         <directionalLight
           castShadow
           position={[4.5, 7.5, 4.0]}
-          intensity={1.3}
+          intensity={1.1}
           shadow-mapSize={[1024, 1024]}
           shadow-camera-near={0.5}
           shadow-camera-far={16}
@@ -117,9 +162,9 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           shadow-camera-bottom={-3.2}
           shadow-bias={-0.0001}
         />
-        {/* Soft front & side fills */}
-        <directionalLight position={[-4, 3, 2]} intensity={0.35} color="#edf4fc" />
-        <directionalLight position={[0, -1, 3]} intensity={0.18} color="#faf5ea" />
+        {/* Soft fill lights */}
+        <directionalLight position={[-4, 3, 2]} intensity={0.28} color="#edf4fc" />
+        <directionalLight position={[0, -1, 3]} intensity={0.14} color="#faf5ea" />
 
         {/* 3D Furniture Models */}
         {isTV ? (
@@ -154,7 +199,7 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           />
         )}
 
-        {/* 1.80m Human Scale Figure (Matching Woodcoder screenshot!) */}
+        {/* 1.80m Human Scale Figure — real Woodcoder woodman2.glb */}
         {showHumanScale && !isExploded && (
           <HumanScaleFigure position={humanPosition} visible={true} />
         )}
@@ -186,17 +231,8 @@ export const ConfiguratorCanvas: React.FC<ConfiguratorCanvasProps> = ({
           color="#221b14"
         />
 
-        {/* Showroom Wall & Floor (Warm neutral room environment) */}
-        {/* Floor */}
-        <mesh position={[0, -0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <planeGeometry args={[18, 18]} />
-          <meshStandardMaterial color="#c5beaf" roughness={0.92} metalness={0.02} />
-        </mesh>
-        {/* Subtle Back Wall */}
-        <mesh position={[0, 4.0, -3.5]} receiveShadow>
-          <planeGeometry args={[18, 8]} />
-          <meshStandardMaterial color="#b9b3a5" roughness={0.95} metalness={0.01} />
-        </mesh>
+        {/* Woodcoder-matching showroom: textured box room */}
+        <ShowroomEnvironment />
       </Canvas>
     </div>
   );
