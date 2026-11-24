@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { Loader2, X, QrCode, Tv, Box, HelpCircle } from "lucide-react";
 import { FloatingViewportControls } from "./FloatingViewportControls";
 import { ProductToolsBar, ConfigCategory } from "./ProductToolsBar";
@@ -40,11 +41,38 @@ export const ConfiguratorLayout: React.FC = () => {
   const { language } = useI18nStore();
   const tvStore = useTVStandStore();
   const cabinetStore = useConfiguratorStore();
+  const searchParams = useSearchParams();
 
   const [activeModel, setActiveModel] = useState<"tv-stand" | "cabinet">("tv-stand");
   const [activeCategory, setActiveCategory] = useState<ConfigCategory>("dimensions");
   const [is2D, setIs2D] = useState(false);
   const [showDimensions] = useState(false);
+
+  // Sync activeModel & pre-load product from URL search params (e.g. ?model=cabinet&product=fanus-bookshelf-loft)
+  useEffect(() => {
+    const modelParam = searchParams.get("model");
+    const productParam = searchParams.get("product");
+
+    if (
+      modelParam === "cabinet" ||
+      productParam === "fanus-bookshelf-loft" ||
+      productParam?.includes("loft") ||
+      productParam?.includes("bookshelf")
+    ) {
+      setActiveModel("cabinet");
+      if (productParam === "fanus-bookshelf-loft" || productParam?.includes("loft")) {
+        cabinetStore.setDimensions({ width: 100, height: 200, depth: 32 });
+        cabinetStore.setMaterial("walnut");
+        cabinetStore.setShelfCount(5);
+        cabinetStore.setDoorType("none");
+        cabinetStore.setLegStyle("metal-plinth");
+        cabinetStore.setFinish("satin");
+      }
+    } else if (modelParam === "tv-stand") {
+      setActiveModel("tv-stand");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Modals state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
