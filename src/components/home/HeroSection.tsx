@@ -33,12 +33,12 @@ export const HeroSection: React.FC = () => {
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-stone-900 tracking-tight leading-[1.1]">
-              {t.hero.title1}{" "}
+              <span>{t.hero.title1}</span>{" "}
               <span className="relative inline-block text-wood-800">
                 {t.hero.titleHighlight}
                 <span className="absolute bottom-1 left-0 w-full h-3 bg-wood-200/60 -z-10 rounded-sm" />
               </span>{" "}
-              {t.hero.title2}
+              <span>{t.hero.title2}</span>
             </h1>
 
             {/* Subtitle */}

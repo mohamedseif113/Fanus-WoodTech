@@ -23,8 +23,10 @@ export const Navbar: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     initializeLanguage();
     initCart();
   }, [initializeLanguage, initCart]);
@@ -53,12 +55,13 @@ export const Navbar: React.FC = () => {
             <Box className="w-5 h-5 text-amber-300" />
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-stone-900 tracking-tight text-lg leading-tight flex items-center gap-1">
-              Fanus <span className="text-wood-700">WoodTech</span>
-              <span className="text-[10px] bg-wood-100 text-wood-800 font-bold px-1.5 py-0.5 rounded ml-0.5">
+            <div className="font-extrabold text-stone-900 tracking-tight text-lg leading-tight flex items-center gap-1.5">
+              <span>Fanus</span>
+              <span className="text-wood-700">WoodTech</span>
+              <span className="text-[10px] bg-wood-100 text-wood-800 font-bold px-1.5 py-0.5 rounded">
                 3D
               </span>
-            </span>
+            </div>
             <span className="text-[10px] font-medium text-stone-500 tracking-wider uppercase">
               Interactive Furniture
             </span>
@@ -113,7 +116,7 @@ export const Navbar: React.FC = () => {
               aria-label={t.nav.language}
             >
               <Globe className="w-3.5 h-3.5 text-wood-700" />
-              <span>{language === "tr" ? "Türkçe" : "English"}</span>
+              <span>{mounted && language === "en" ? "English" : "Türkçe"}</span>
               <ChevronDown className="w-3 h-3 text-stone-400" />
             </button>
 
@@ -154,7 +157,7 @@ export const Navbar: React.FC = () => {
             <ShoppingBag className="w-4 h-4 text-amber-300" />
             <span className="hidden sm:inline">{t.nav.cart}</span>
             <span className="w-5 h-5 rounded-full bg-amber-400 text-wood-950 font-extrabold flex items-center justify-center text-[10px]">
-              {totalCount}
+              {mounted ? totalCount : 0}
             </span>
           </button>
 

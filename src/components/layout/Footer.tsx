@@ -37,9 +37,11 @@ export const Footer: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-wood-700 flex items-center justify-center text-amber-200">
                 <Box className="w-5 h-5" />
               </div>
-              <span className="font-extrabold text-white text-lg tracking-tight">
-                Fanus <span className="text-wood-400">WoodTech</span> 3D
-              </span>
+              <div className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5">
+                <span>Fanus</span>
+                <span className="text-wood-400">WoodTech</span>
+                <span className="text-xs bg-wood-800 text-amber-200 px-1.5 py-0.5 rounded font-bold">3D</span>
+              </div>
             </Link>
 
             <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
