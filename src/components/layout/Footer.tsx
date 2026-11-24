@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants/products";
+import { FadeIn } from "@/components/ui/motion";
 
 export const Footer: React.FC = () => {
   const { t } = useI18nStore();
@@ -30,7 +31,7 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-charcoal-950 text-stone-300 pt-16 pb-12 border-t border-stone-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-stone-800">
+        <FadeIn className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-stone-800">
           {/* COLUMN 1 & 2: BRAND & ABOUT */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2.5">
@@ -44,13 +45,13 @@ export const Footer: React.FC = () => {
               </div>
             </Link>
 
-            <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
+            <p className="text-xs text-stone-400 leading-relaxed max-w-sm font-normal">
               {t.footer.aboutText}
             </p>
 
             {/* Newsletter */}
             <div className="pt-2">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-white tracking-woodcoder-tag uppercase mb-2">
                 {t.footer.newsletterTitle}
               </h4>
               <p className="text-[11px] text-stone-400 mb-2">
@@ -67,7 +68,7 @@ export const Footer: React.FC = () => {
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-wood-700 hover:bg-wood-600 text-white font-bold text-xs rounded-xl transition-all"
+                  className="px-4 py-2 bg-wood-700 hover:bg-wood-600 text-white font-bold text-xs rounded-xl transition-all active:scale-95"
                 >
                   {subscribed ? <CheckCircle className="w-4 h-4" /> : t.footer.newsletterSubscribe}
                 </button>
@@ -77,7 +78,7 @@ export const Footer: React.FC = () => {
 
           {/* COLUMN 3: CATEGORIES */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-white tracking-woodcoder-tag uppercase">
               {t.footer.categoriesHeader}
             </h4>
             <ul className="space-y-2 text-xs">
@@ -96,7 +97,7 @@ export const Footer: React.FC = () => {
 
           {/* COLUMN 4: QUICK LINKS */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-white tracking-woodcoder-tag uppercase">
               {t.footer.quickLinks}
             </h4>
             <ul className="space-y-2 text-xs">
@@ -130,7 +131,7 @@ export const Footer: React.FC = () => {
 
           {/* COLUMN 5: CONTACT & FACTORY */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-white tracking-woodcoder-tag uppercase">
               {t.footer.contactHeader}
             </h4>
             <ul className="space-y-2.5 text-xs text-stone-400">
@@ -152,15 +153,15 @@ export const Footer: React.FC = () => {
               </li>
             </ul>
           </div>
-        </div>
+        </FadeIn>
 
         {/* BOTTOM COPYRIGHT */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 gap-4">
           <p>© {new Date().getFullYear()} {t.footer.rightsReserved}</p>
           <div className="flex gap-6">
-            <span>Gizlilik Politikası</span>
-            <span>Kullanım Koşulları</span>
-            <span>KVKK Aydınlatma Metni</span>
+            <span className="hover:text-stone-300 cursor-pointer transition-colors">Gizlilik Politikası</span>
+            <span className="hover:text-stone-300 cursor-pointer transition-colors">Kullanım Koşulları</span>
+            <span className="hover:text-stone-300 cursor-pointer transition-colors">KVKK Aydınlatma Metni</span>
           </div>
         </div>
       </div>

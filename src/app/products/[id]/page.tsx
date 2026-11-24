@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   CheckCircle2,
 } from "lucide-react";
+import { FadeIn, ImageReveal, HoverElevate } from "@/components/ui/motion";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -31,9 +32,9 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 w-full">
+    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
       {/* Back button */}
-      <div className="mb-6">
+      <FadeIn className="mb-6">
         <Link
           href="/products"
           className="inline-flex items-center gap-2 text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors"
@@ -41,100 +42,101 @@ export default function ProductDetailPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Tüm Koleksiyona Dön</span>
         </Link>
-      </div>
+      </FadeIn>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Product Gallery (Left) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="aspect-[4/3] rounded-3xl overflow-hidden border border-stone-200 bg-stone-100 shadow-soft-lg">
+        <FadeIn direction="right" className="lg:col-span-7 space-y-4">
+          <ImageReveal className="aspect-[4/3] rounded-3xl border border-stone-200 bg-stone-100 shadow-soft-lg group">
             <img
               src={product.image}
               alt={product.nameKey}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
-          </div>
+          </ImageReveal>
 
           {/* Quick thumbnails / details */}
           <div className="grid grid-cols-3 gap-3">
             {[1, 2, 3].map((_, i) => (
-              <div
-                key={i}
-                className="aspect-[16/10] rounded-xl overflow-hidden border border-stone-200 bg-stone-100 opacity-90 hover:opacity-100 transition-opacity"
-              >
-                <img
-                  src={product.image}
-                  alt={`Detail ${i}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <HoverElevate key={i} yOffset={-3}>
+                <div className="aspect-[16/10] rounded-xl overflow-hidden border border-stone-200 bg-stone-100 opacity-90 hover:opacity-100 transition-all cursor-pointer">
+                  <img
+                    src={product.image}
+                    alt={`Detail ${i}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              </HoverElevate>
             ))}
           </div>
-        </div>
+        </FadeIn>
 
         {/* Product Specs & CTA (Right) */}
-        <div className="lg:col-span-5 space-y-6">
+        <FadeIn direction="left" delay={0.15} className="lg:col-span-5 space-y-6">
           <div>
-            <div className="text-xs font-bold text-wood-700 uppercase tracking-wider mb-1">
+            <div className="text-xs font-semibold text-wood-700 tracking-woodcoder-tag uppercase mb-1.5">
               Fanus Modüler Mimari Seri
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">
               {product.nameKey}
             </h1>
-            <p className="text-sm text-stone-600 mt-3 leading-relaxed">
+            <p className="text-sm text-stone-600 mt-3 leading-relaxed font-normal">
               {product.descriptionKey}
             </p>
           </div>
 
           {/* Price Box */}
-          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-1">
+          <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200 space-y-1">
             <span className="text-xs text-stone-500 font-medium block">
               {t.products.startingFrom}
             </span>
-            <div className="text-3xl font-black text-wood-900">
+            <div className="text-3xl font-black text-wood-900 tracking-tight">
               {formatCurrency(product.basePrice, language)}
             </div>
-            <span className="text-[11px] text-stone-400 block">
+            <span className="text-[11px] text-stone-400 block font-normal">
               KDV dahil • Ücretsiz adrese teslim ve montaj
             </span>
           </div>
 
           {/* Primary CTA: Design Your Own in 3D */}
-          <button
-            onClick={handleCustomize}
-            className="w-full py-4 px-6 bg-wood-800 hover:bg-wood-900 text-white font-extrabold text-sm rounded-xl shadow-soft-md hover:shadow-soft-lg flex items-center justify-center gap-2.5 transition-all group active:scale-[0.99]"
-          >
-            <Sparkles className="w-5 h-5 text-amber-300 group-hover:rotate-12 transition-transform" />
-            <span>{t.common.designYourOwn} (3D)</span>
-          </button>
+          <HoverElevate yOffset={-3}>
+            <button
+              onClick={handleCustomize}
+              className="w-full py-4 px-6 bg-wood-800 hover:bg-wood-900 text-white font-bold text-sm rounded-xl shadow-soft-md hover:shadow-soft-lg flex items-center justify-center gap-2.5 transition-all group active:scale-[0.99]"
+            >
+              <Sparkles className="w-5 h-5 text-amber-300 group-hover:rotate-12 transition-transform" />
+              <span>{t.common.designYourOwn} (3D)</span>
+            </button>
+          </HoverElevate>
 
           {/* Technical Specifications */}
           <div className="border-t border-stone-200 pt-6 space-y-4">
-            <h3 className="font-extrabold text-stone-900 text-base">
+            <h3 className="font-extrabold text-stone-900 text-base tracking-tight">
               {t.products.specifications}
             </h3>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500">{t.products.dimensionsStandard}:</span>
-                <span className="font-bold text-stone-900">
+                <span className="text-stone-500 font-normal">{t.products.dimensionsStandard}:</span>
+                <span className="font-semibold text-stone-900">
                   {product.dimensions.width} x {product.dimensions.height} x {product.dimensions.depth} cm
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500">{t.products.materialsAvailable}:</span>
-                <span className="font-bold text-stone-900">
+                <span className="text-stone-500 font-normal">{t.products.materialsAvailable}:</span>
+                <span className="font-semibold text-stone-900">
                   Meşe, Ceviz, Kayın, Lake (6 Seçenek)
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500">{t.products.productionTime}:</span>
-                <span className="font-bold text-stone-900">
+                <span className="text-stone-500 font-normal">{t.products.productionTime}:</span>
+                <span className="font-semibold text-stone-900">
                   {t.products.productionTimeVal}
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <span className="text-stone-500">{t.products.warranty}:</span>
-                <span className="font-bold text-stone-900">
+                <span className="text-stone-500 font-normal">{t.products.warranty}:</span>
+                <span className="font-semibold text-stone-900">
                   {t.products.warrantyVal}
                 </span>
               </div>
@@ -143,7 +145,7 @@ export default function ProductDetailPage() {
 
           {/* Key Features */}
           <div className="p-4 rounded-xl bg-wood-50/60 border border-wood-200/80 space-y-2">
-            <div className="text-xs font-bold text-wood-900">
+            <div className="text-xs font-bold text-wood-900 tracking-tight">
               {t.products.includedComponents}
             </div>
             <ul className="space-y-1.5 text-xs text-stone-700">
@@ -155,7 +157,7 @@ export default function ProductDetailPage() {
               ))}
             </ul>
           </div>
-        </div>
+        </FadeIn>
       </div>
     </main>
   );

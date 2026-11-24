@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+
+const poppins = Poppins({
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Fanus WoodTech 3D – İnteraktif Mobilya Stüdyosu & 3D Konfigüratör",
@@ -25,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased" suppressHydrationWarning>
+      <body
+        className={`${poppins.variable} font-sans min-h-screen flex flex-col bg-[#faf8f5] text-[#1a1918] antialiased`}
+        suppressHydrationWarning
+      >
         <Navbar />
         <div className="flex-1 flex flex-col">{children}</div>
         <Footer />

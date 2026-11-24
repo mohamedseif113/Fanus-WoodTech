@@ -78,13 +78,13 @@ export const Navbar: React.FC = () => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${
                     isActive
                       ? "bg-wood-800 text-white shadow-soft-sm"
-                      : "bg-wood-50 text-wood-800 hover:bg-wood-100 border border-wood-200/70"
+                      : "bg-wood-50 text-wood-800 hover:bg-wood-100 hover:shadow-soft-sm border border-wood-200/70"
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                   <span>{link.label}</span>
                 </Link>
               );
@@ -94,10 +94,10 @@ export const Navbar: React.FC = () => {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                className={`relative px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:text-stone-900 ${
                   isActive
-                    ? "text-wood-800 bg-stone-100"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+                    ? "text-wood-800 bg-stone-100/90 font-bold"
+                    : "text-stone-600 hover:bg-stone-50"
                 }`}
               >
                 {link.label}
