@@ -3,25 +3,66 @@
 /**
  * StorageBedCanvas.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Dedicated Three.js canvas for the StorageBed3D preview.
- * Uses the same showroom environment, lighting and camera conventions
- * as ConfiguratorCanvas – no new dependencies introduced.
- *
- * Phase 1: Read-only static preview.
- * Phase 2: Will add interactive configurator panel.
+ * Three.js Canvas for StorageBed3D assembly video & interactive viewer.
+ * Provides camera tracking per step and full orbit controls.
  */
 
-import React, { Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import React, { useRef, useEffect, Suspense } from "react";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Environment, useTexture } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { StorageBed3D, StorageBed3DProps } from "./StorageBed3D";
+import { ASSEMBLY_STEPS } from "@/lib/constants/assemblySteps";
 
-// ── Reuse the same showroom floor + wall as ConfiguratorCanvas ────────────────
+function CameraStepController({ step }: { step: number }) {
+  const { camera } = useThree();
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  const targetPos = useRef(new THREE.Vector3(2.5, 1.4, 2.8));
+  const targetLook = useRef(new THREE.Vector3(0, 0.45, 0));
+  const isTransitioning = useRef(false);
+
+  useEffect(() => {
+    const stepConfig = ASSEMBLY_STEPS.find((s) => s.step === step);
+    if (stepConfig) {
+      targetPos.current.set(...stepConfig.camera.position);
+      targetLook.current.set(...stepConfig.camera.target);
+      isTransitioning.current = true;
+    }
+  }, [step]);
+
+  useFrame((_, delta) => {
+    if (isTransitioning.current && controlsRef.current) {
+      camera.position.lerp(targetPos.current, 3.5 * delta);
+      controlsRef.current.target.lerp(targetLook.current, 3.5 * delta);
+      controlsRef.current.update();
+
+      if (camera.position.distanceTo(targetPos.current) < 0.03) {
+        isTransitioning.current = false;
+      }
+    }
+  });
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      minDistance={1.0}
+      maxDistance={7.5}
+      minPolarAngle={Math.PI / 16}
+      maxPolarAngle={Math.PI / 2 + 0.02}
+      enableDamping
+      dampingFactor={0.06}
+      target={[0, 0.45, 0]}
+    />
+  );
+}
+
 function ShowroomEnvironment() {
   const [wallTex, floorTex] = useTexture(["/wall_b.webp", "/floor_z.webp"]);
 
-  wallTex.wrapS  = wallTex.wrapT  = THREE.RepeatWrapping;
+  wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
   wallTex.repeat.set(16, 8);
   floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
   floorTex.repeat.set(12, 12);
@@ -40,45 +81,32 @@ function ShowroomEnvironment() {
   );
 }
 
-// ── Canvas component ──────────────────────────────────────────────────────────
 interface StorageBedCanvasProps extends StorageBed3DProps {
-  /** Camera starts in a 3/4 perspective view matching the bed's proportions */
-  initialCameraPosition?: [number, number, number];
+  assemblyStep?: number;
 }
 
 export const StorageBedCanvas: React.FC<StorageBedCanvasProps> = ({
-  initialCameraPosition = [2.6, 1.6, 3.4],
+  assemblyStep = 12,
   ...bedProps
 }) => {
   return (
     <div className="w-full h-full relative select-none bg-[#ded7cb]">
       <Canvas
         shadows
-        camera={{ position: initialCameraPosition, fov: 42 }}
+        camera={{ position: [2.5, 1.4, 2.8], fov: 42 }}
         gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
         className="canvas-3d-cursor"
       >
-        <OrbitControls
-          makeDefault
-          minDistance={1.5}
-          maxDistance={8.0}
-          minPolarAngle={Math.PI / 16}
-          maxPolarAngle={Math.PI / 2 + 0.02}
-          enableDamping
-          dampingFactor={0.06}
-          target={[0, 0.55, 0]}
-        />
+        <CameraStepController step={assemblyStep} />
 
-        {/* Studio HDR – same file as the main configurator */}
         <Suspense fallback={null}>
           <Environment files="/studio.hdr" />
         </Suspense>
 
-        {/* Key light – matches ConfiguratorCanvas shadow settings */}
         <directionalLight
           castShadow
           position={[4.5, 7.5, 4.0]}
-          intensity={1.1}
+          intensity={1.15}
           shadow-mapSize={[1024, 1024]}
           shadow-camera-near={0.5}
           shadow-camera-far={18}
@@ -88,16 +116,13 @@ export const StorageBedCanvas: React.FC<StorageBedCanvasProps> = ({
           shadow-camera-bottom={-4}
           shadow-bias={-0.0001}
         />
-        {/* Fill lights */}
-        <directionalLight position={[-4, 3, 2]}  intensity={0.28} color="#edf4fc" />
-        <directionalLight position={[0, -1, 3]}  intensity={0.14} color="#faf5ea" />
+        <directionalLight position={[-4, 3, 2]} intensity={0.32} color="#edf4fc" />
+        <directionalLight position={[0, -1, 3]} intensity={0.16} color="#faf5ea" />
 
-        {/* The bed model – centred, sitting on floor */}
         <Suspense fallback={null}>
-          <StorageBed3D {...bedProps} />
+          <StorageBed3D assemblyStep={assemblyStep} {...bedProps} />
         </Suspense>
 
-        {/* Ground contact shadow for the bed */}
         <ContactShadows
           position={[0, 0, 0]}
           opacity={0.42}
@@ -108,7 +133,6 @@ export const StorageBedCanvas: React.FC<StorageBedCanvasProps> = ({
           color="#221b14"
         />
 
-        {/* Showroom floor + back wall */}
         <Suspense fallback={null}>
           <ShowroomEnvironment />
         </Suspense>
