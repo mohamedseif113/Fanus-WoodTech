@@ -20,7 +20,8 @@ declare global {
       step: number,
       progress: number,
       openRatio: number,
-      camRotY?: number
+      camRotY?: number,
+      expRatio?: number
     ) => void;
     startAutomatedRecording?: () => Promise<string>;
     isRenderReady?: boolean;
@@ -84,13 +85,15 @@ export default function StorageBedRenderPage() {
   const [progress, setProgress] = useState<number>(1.0);
   const [openRatio, setOpenRatio] = useState<number>(0.0);
   const [camRotY, setCamRotY] = useState<number>(0.0);
+  const [expRatio, setExpRatio] = useState<number>(0.0);
 
   useEffect(() => {
-    window.renderAssemblyFrame = (s, p, open, rot = 0) => {
+    window.renderAssemblyFrame = (s, p, open, rot = 0, exp = 0) => {
       setStep(s === 0 ? 1 : s === 13 ? 12 : s);
       setProgress(p);
       setOpenRatio(open);
       setCamRotY(rot);
+      setExpRatio(exp);
     };
 
     window.startAutomatedRecording = () => {
@@ -352,12 +355,14 @@ export default function StorageBedRenderPage() {
     <div
       id="render-root"
       style={{
+        position: "fixed",
+        inset: 0,
         width: "1920px",
         height: "1080px",
-        position: "relative",
         overflow: "hidden",
         backgroundColor: "#ded7cb",
         userSelect: "none",
+        zIndex: 99999,
       }}
     >
       <Canvas
@@ -393,6 +398,7 @@ export default function StorageBedRenderPage() {
             assemblyStep={step}
             stepProgress={progress}
             openRatio={openRatio}
+            explodedRatio={expRatio}
             upholsteryColor="dove-grey"
             frameMaterial="oak"
             frameFinish="satin"

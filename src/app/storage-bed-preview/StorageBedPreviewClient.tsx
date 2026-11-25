@@ -45,6 +45,9 @@ export default function StorageBedPreviewClient() {
   const [stepProgress, setStepProgress] = useState<number>(1.0);
   const [openRatio, setOpenRatio] = useState<number>(0.0);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [explodedView, setExplodedView] = useState<boolean>(false);
+  const [explodedRatio, setExplodedRatio] = useState<number>(0.85);
+  const [resetCameraTrigger, setResetCameraTrigger] = useState<number>(0);
 
   const [upholstery, setUpholstery] = useState<UpholsteryColor>("dove-grey");
   const [frameMat, setFrameMat] = useState<WoodMaterial>("oak");
@@ -133,13 +136,66 @@ export default function StorageBedPreviewClient() {
       <div className="flex-1 relative flex flex-col">
         <div className="flex-1 relative">
           <StorageBedCanvas
-            assemblyStep={currentStep}
+            assemblyStep={explodedView ? 12 : currentStep}
             stepProgress={stepProgress}
             openRatio={openRatio}
+            explodedView={explodedView}
+            explodedRatio={explodedView ? explodedRatio : 0}
+            resetCameraTrigger={resetCameraTrigger}
             upholsteryColor={upholstery}
             frameMaterial={frameMat}
             frameFinish={frameFinish}
           />
+
+          {/* Top-Right Quick Viewport Controls: Exploded View & Camera Reset */}
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <button
+              onClick={() => {
+                setExplodedView(!explodedView);
+                if (!explodedView) setCurrentStep(12);
+              }}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xl backdrop-blur-md border ${
+                explodedView
+                  ? "bg-amber-500 text-stone-900 border-amber-400 ring-2 ring-amber-400/50 scale-105"
+                  : "bg-stone-900/85 hover:bg-stone-800 text-stone-200 border-stone-700/80"
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>{explodedView ? "Patlatılmış Görünüm (Açık)" : "Patlatılmış Görünüm (Exploded View)"}</span>
+            </button>
+
+            <button
+              onClick={() => setResetCameraTrigger((t) => t + 1)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-stone-900/85 hover:bg-stone-800 text-stone-200 border border-stone-700/80 shadow-xl backdrop-blur-md transition-all"
+              title="Kamerayı Varsayılan Açıya Sıfırla"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Kamera Sıfırla</span>
+            </button>
+          </div>
+
+          {/* Exploded Ratio Slider Overlay (Visible when exploded view active) */}
+          {explodedView && (
+            <div className="absolute top-16 right-4 z-10 w-72 bg-stone-900/90 backdrop-blur-md border border-stone-700/80 rounded-xl p-3 shadow-2xl text-white">
+              <div className="flex justify-between items-center text-xs font-bold text-amber-400 mb-1.5">
+                <span>Parça Ayrılma Mesafesi</span>
+                <span className="font-mono">{Math.round(explodedRatio * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="1.5"
+                step="0.02"
+                value={explodedRatio}
+                onChange={(e) => setExplodedRatio(parseFloat(e.target.value))}
+                className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
+              />
+              <div className="flex justify-between text-[10px] text-stone-400 mt-1">
+                <span>Yakın</span>
+                <span>Maksimum Patlatma</span>
+              </div>
+            </div>
+          )}
 
           {/* Cinematic Top-Left Step Overlay Badge */}
           <div className="absolute top-4 left-4 max-w-md bg-stone-900/90 backdrop-blur-md border border-stone-700/60 p-4 rounded-xl shadow-2xl text-white pointer-events-none transition-all">
@@ -176,9 +232,17 @@ export default function StorageBedPreviewClient() {
             )}
           </div>
 
-          {/* Watermark notice */}
-          <div className="absolute bottom-4 left-4 bg-stone-900/80 backdrop-blur border border-stone-700 text-stone-300 text-[10px] font-medium px-3 py-1.5 rounded-lg shadow-sm">
-            TEK KİŞİLİK YATAY BAZA • 12 Aşamalı 3D Montaj Kılavuzu
+          {/* Watermark notice & CAD Switch */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2">
+            <div className="bg-stone-900/80 backdrop-blur border border-stone-700 text-stone-300 text-[10px] font-medium px-3 py-1.5 rounded-lg shadow-sm">
+              TEK KİŞİLİK YATAY BAZA • 12 Aşamalı 3D Montaj Kılavuzu
+            </div>
+            <a
+              href="/cad-screw-demo"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 transition-all animate-pulse"
+            >
+              <span>🔬 CAD Style Screw Demo (PoC) →</span>
+            </a>
           </div>
         </div>
 
@@ -409,15 +473,22 @@ export default function StorageBedPreviewClient() {
           </div>
         </div>
 
-        {/* Video Render Notice */}
+        {/* Video Download Section */}
         <div className="p-4 mt-auto">
-          <div className="bg-stone-800/80 border border-stone-700/80 rounded-xl p-3 text-center">
-            <span className="text-xs font-semibold text-stone-200 block">
-              1080p Video Üretimi
+          <div className="bg-gradient-to-br from-stone-800 to-stone-850 border border-stone-700/80 rounded-xl p-3.5 text-center shadow-lg">
+            <span className="text-xs font-bold text-white block">
+              1080p Montaj Videosu
             </span>
-            <span className="text-[10px] text-stone-400 mt-1 block">
-              FFmpeg 9.1 H.264 render motoru hazır.
+            <span className="text-[11px] text-stone-400 mt-0.5 block">
+              12 Aşamalı Tam Montaj + 360° Vitrin
             </span>
+            <a
+              href="/storage-bed-assembly.mp4"
+              download="storage-bed-assembly-1080p.mp4"
+              className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#3498a7] hover:bg-[#2c818e] text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-[#3498a7]/20"
+            >
+              <span>📥 MP4 Videoyu İndir (1080p)</span>
+            </a>
           </div>
         </div>
       </aside>

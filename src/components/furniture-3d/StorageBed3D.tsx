@@ -58,9 +58,10 @@ export interface StorageBed3DProps {
   upholsteryColor?: UpholsteryColor;
   showLiftMechanism?: boolean;
   explodedView?: boolean;
-  assemblyStep?: number; // 1 to 12. If undefined or 12, full model is shown.
-  stepProgress?: number; // 0.0 to 1.0 animation within the step
-  openRatio?: number;    // 0.0 to 1.0 opening angle for gas lift mechanism
+  explodedRatio?: number; // 0.0 (assembled) to 1.0 (fully exploded)
+  assemblyStep?: number;  // 1 to 12. If undefined or 12, full model is shown.
+  stepProgress?: number;  // 0.0 to 1.0 animation within the step
+  openRatio?: number;     // 0.0 to 1.0 opening angle for gas lift mechanism
 }
 
 const DEFAULT_DIMENSIONS: StorageBedDimensions = {
@@ -77,6 +78,8 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
   frameFinish = "satin",
   upholsteryColor = "dove-grey",
   showLiftMechanism = true,
+  explodedView = false,
+  explodedRatio = 0.0,
   assemblyStep = 12,
   stepProgress = 1.0,
   openRatio = 0.0,
@@ -87,6 +90,9 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
   const H = dims.height / 100;
   const HH = dims.headboardHeight / 100;
   const FH = dims.footboardHeight / 100;
+
+  // Effective exploded ratio (0.0 to 1.0)
+  const exp = explodedView ? Math.max(0.75, explodedRatio) : Math.max(0, Math.min(1, explodedRatio));
 
   // Materials
   const woodMat = useMemo(
@@ -360,13 +366,13 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
           ========================================================================= */}
       {showBoxFrame && (
         <group position={[0, LEG_H, 0]}>
-          {/* Step 3 animation offset */}
+          {/* Step 3 animation offset + Exploded View displacement */}
           {(() => {
             const animDist = step === 3 ? (1 - p) * 0.35 : 0;
             return (
               <>
                 {/* Left side board */}
-                <group position={[-W / 2 + PANEL_T / 2 - animDist, frameBoxH / 2, 0]}>
+                <group position={[-W / 2 + PANEL_T / 2 - animDist - exp * 0.40, frameBoxH / 2, 0]}>
                   <mesh castShadow receiveShadow material={woodMat}>
                     <boxGeometry args={[PANEL_T, frameBoxH, L]} />
                   </mesh>
@@ -377,7 +383,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                 </group>
 
                 {/* Right side board */}
-                <group position={[W / 2 - PANEL_T / 2 + animDist, frameBoxH / 2, 0]}>
+                <group position={[W / 2 - PANEL_T / 2 + animDist + exp * 0.40, frameBoxH / 2, 0]}>
                   <mesh castShadow receiveShadow material={woodMat}>
                     <boxGeometry args={[PANEL_T, frameBoxH, L]} />
                   </mesh>
@@ -387,7 +393,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                 </group>
 
                 {/* Headboard panel (Head end board) */}
-                <group position={[0, HH / 2 - LEG_H, -L / 2 + PANEL_T / 2 - animDist]}>
+                <group position={[0, HH / 2 - LEG_H, -L / 2 + PANEL_T / 2 - animDist - exp * 0.45]}>
                   <mesh castShadow receiveShadow material={woodMat}>
                     <boxGeometry args={[W, HH, PANEL_T]} />
                   </mesh>
@@ -397,7 +403,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                 </group>
 
                 {/* Footboard panel (Foot end board) */}
-                <group position={[0, FH / 2 - LEG_H, L / 2 - PANEL_T / 2 + animDist]}>
+                <group position={[0, FH / 2 - LEG_H, L / 2 - PANEL_T / 2 + animDist + exp * 0.45]}>
                   <mesh castShadow receiveShadow material={woodMat}>
                     <boxGeometry args={[W, FH, PANEL_T]} />
                   </mesh>
@@ -412,15 +418,19 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                   [W / 2 - 0.04, -L / 2 + 0.04],
                   [-W / 2 + 0.04, L / 2 - 0.04],
                   [W / 2 - 0.04, L / 2 - 0.04],
-                ].map(([bx, bz], bidx) => (
-                  <mesh
-                    key={`box-bracket-${bidx}`}
-                    position={[bx, frameBoxH / 2, bz]}
-                    material={steelMat}
-                  >
-                    <boxGeometry args={[0.03, frameBoxH * 0.7, 0.03]} />
-                  </mesh>
-                ))}
+                ].map(([bx, bz], bidx) => {
+                  const cornerExpX = (bx > 0 ? 1 : -1) * exp * 0.25;
+                  const cornerExpZ = (bz > 0 ? 1 : -1) * exp * 0.25;
+                  return (
+                    <mesh
+                      key={`box-bracket-${bidx}`}
+                      position={[bx + cornerExpX, frameBoxH / 2, bz + cornerExpZ]}
+                      material={steelMat}
+                    >
+                      <boxGeometry args={[0.03, frameBoxH * 0.7, 0.03]} />
+                    </mesh>
+                  );
+                })}
               </>
             );
           })()}
@@ -432,7 +442,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
             [ -0.4, 0, 0.4 ].map((zPos, idx) => {
               const tieBarDrop = step === 4 ? (1 - p) * 0.3 : 0;
               return (
-                <group key={`tiebar-${idx}`} position={[0, 0.025 + tieBarDrop, zPos]}>
+                <group key={`tiebar-${idx}`} position={[0, 0.025 + tieBarDrop - exp * 0.22, zPos]}>
                   {/* Metal tie rod */}
                   <mesh castShadow material={steelMat}>
                     <boxGeometry args={[W - 2 * PANEL_T, 0.02, 0.02]} />
@@ -460,10 +470,11 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                 [W / 2 - PANEL_T - 0.01, 0.4],
               ].map(([sx, sz], sidx) => {
                 const stopperSlide = step === 5 ? (1 - p) * 0.15 : 0;
+                const stopperExpX = (sx > 0 ? 1 : -1) * exp * 0.38;
                 return (
                   <mesh
                     key={`stopper-${sidx}`}
-                    position={[sx, -stopperSlide, sz]}
+                    position={[sx + stopperExpX, -stopperSlide + exp * 0.12, sz]}
                     material={redAccentMat}
                     castShadow
                   >
@@ -488,7 +499,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                       castShadow
                       receiveShadow
                       material={woodMat}
-                      position={[0, floorDrop, -L / 4 + 0.02]}
+                      position={[0, floorDrop + exp * 0.20, -L / 4 + 0.02 - exp * 0.25]}
                     >
                       <boxGeometry args={[W - 2 * PANEL_T - 0.02, 0.012, L / 2 - 0.04]} />
                     </mesh>
@@ -496,7 +507,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                       castShadow
                       receiveShadow
                       material={woodMat}
-                      position={[0, floorDrop, L / 4 - 0.02]}
+                      position={[0, floorDrop + exp * 0.20, L / 4 - 0.02 + exp * 0.25]}
                     >
                       <boxGeometry args={[W - 2 * PANEL_T - 0.02, 0.012, L / 2 - 0.04]} />
                     </mesh>
@@ -510,11 +521,11 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
               STEP 9: SCISSOR LIFT MECHANISM & GAS PISTONS (Steps 9 to 12)
               ========================================================================= */}
           {showMechanism && (
-            <group position={[0, frameBoxH * 0.6, 0]}>
+            <group position={[0, frameBoxH * 0.6 + exp * 0.25, 0]}>
               {/* Left & Right scissor assemblies attached to inner side boards */}
               {[-1, 1].map((side) => {
                 const mechFly = step === 9 ? (1 - p) * (side * 0.25) : 0;
-                const posX = side * (W / 2 - PANEL_T - 0.02) + mechFly;
+                const posX = side * (W / 2 - PANEL_T - 0.02) + mechFly + (side * exp * 0.15);
                 return (
                   <group key={`mech-side-${side}`} position={[posX, 0, 0]}>
                     {/* Barrier frame F1-F2 (ladder bar) */}
@@ -571,8 +582,10 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
             [W / 2 - 0.09, L / 2 - 0.09],
           ].map(([lx, lz], lidx) => {
             const legRise = step === 6 ? -(1 - p) * 0.25 : 0;
+            const legExpX = (lx > 0 ? 1 : -1) * exp * 0.20;
+            const legExpZ = (lz > 0 ? 1 : -1) * exp * 0.20;
             return (
-              <group key={`foot-${lidx}`} position={[lx, LEG_H / 2 + legRise, lz]}>
+              <group key={`foot-${lidx}`} position={[lx + legExpX, LEG_H / 2 + legRise - exp * 0.32, lz + legExpZ]}>
                 {/* Triangular corner bracket foot base */}
                 <mesh castShadow receiveShadow material={legFootMat}>
                   <cylinderGeometry args={[0.025, 0.018, LEG_H, 16]} />
@@ -596,7 +609,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
           ========================================================================= */}
       {showUpperFrameOnBed && (
         <group
-          position={[0, baseTopY, -L / 2 + 0.08]}
+          position={[0, baseTopY + exp * 0.85, -L / 2 + 0.08]}
           rotation={[currentLiftAngle, 0, 0]}
         >
           <group position={[0, 0, L / 2 - 0.08]}>
@@ -626,14 +639,14 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                   {/* 12 Curved Slats with Caps (L-1 & -9) */}
                   {showSlats &&
                     slatPositions.map((zPos, sidx) => (
-                      <group key={`deck-slat-${sidx}`} position={[0, 0.02, zPos]}>
+                      <group key={`deck-slat-${sidx}`} position={[0, 0.02 + exp * 0.18, zPos]}>
                         <mesh castShadow receiveShadow material={woodMat}>
                           <boxGeometry args={[W - 0.18, SLAT_T, SLAT_W]} />
                         </mesh>
-                        <mesh position={[-W / 2 + 0.07, 0, 0]} material={redAccentMat}>
+                        <mesh position={[-W / 2 + 0.07 - exp * 0.12, 0, 0]} material={redAccentMat}>
                           <boxGeometry args={[0.03, 0.02, SLAT_W + 0.01]} />
                         </mesh>
-                        <mesh position={[W / 2 - 0.07, 0, 0]} material={redAccentMat}>
+                        <mesh position={[W / 2 - 0.07 + exp * 0.12, 0, 0]} material={redAccentMat}>
                           <boxGeometry args={[0.03, 0.02, SLAT_W + 0.01]} />
                         </mesh>
                       </group>
@@ -645,7 +658,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                       <mesh
                         castShadow
                         material={redAccentMat}
-                        position={[hz, 0.04, 0.02]}
+                        position={[hz, 0.04, 0.02 + exp * 0.18]}
                         rotation={[-0.2, 0, 0]}
                       >
                         <boxGeometry args={[0.14, 0.07, 0.02]} />
@@ -662,7 +675,7 @@ export const StorageBed3D: React.FC<StorageBed3DProps> = ({
                         return (
                           <group
                             key={`retainer-${eidx}`}
-                            position={[ex, 0.06 + loopFly, L / 2 - 0.1]}
+                            position={[ex, 0.06 + loopFly + exp * 0.15, L / 2 - 0.1 + exp * 0.10]}
                           >
                             <mesh castShadow material={redAccentMat}>
                               <boxGeometry args={[0.08, 0.09, 0.008]} />

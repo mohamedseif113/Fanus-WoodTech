@@ -2,7 +2,12 @@
  * scripts/render-assembly-video.mjs
  * ─────────────────────────────────────────────────────────────────────────────
  * Produces the complete 1080p 30 FPS H.264 MP4 video: storage-bed-assembly.mp4
- * Captures all 12 assembly steps + intro + outro, then compiles using FFmpeg.
+ *
+ * Sequence:
+ *   1. Exploded 3D view intro (components separated, converging)
+ *   2. Complete 12-step assembly process with hardware & camera tracking
+ *   3. Gas lift mechanism opening & closing showcase
+ *   4. Full 360-degree orbital showcase of the assembled bed
  */
 
 import { spawn } from "node:child_process";
@@ -14,9 +19,8 @@ const FFMPEG_PATH =
   "C:\\Users\\Mohamed Seif\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.1-full_build\\bin\\ffmpeg.exe";
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const OUTPUT_DIR = "public";
-const FRAMES_DIR = path.join(OUTPUT_DIR, "video_frames");
+const FRAMES_DIR = path.join(OUTPUT_DIR, "assembly_frames");
 const OUTPUT_MP4 = path.join(OUTPUT_DIR, "storage-bed-assembly.mp4");
-const PREVIEW_MP4 = path.join(OUTPUT_DIR, "storage-bed-assembly-preview.mp4");
 
 function createCDPClient(wsUrl) {
   const ws = new WebSocket(wsUrl);
@@ -50,10 +54,16 @@ function createCDPClient(wsUrl) {
 }
 
 async function main() {
-  console.log("=== Fanus WoodTech: 3D Storage Bed Assembly Video Production ===");
+  console.log("=== Fanus WoodTech: 3D Storage Bed Assembly Full Video Production ===");
 
   if (!fs.existsSync(FRAMES_DIR)) {
     fs.mkdirSync(FRAMES_DIR, { recursive: true });
+  } else {
+    // Clear old frames
+    const oldFiles = fs.readdirSync(FRAMES_DIR);
+    for (const f of oldFiles) {
+      if (f.endsWith(".png")) fs.unlinkSync(path.join(FRAMES_DIR, f));
+    }
   }
 
   // 1. Launch Chrome Headless
@@ -62,7 +72,6 @@ async function main() {
     "--headless=new",
     "--remote-debugging-port=9222",
     "--no-sandbox",
-    "--disable-gpu",
     "--window-size=1920,1080",
     "--hide-scrollbars",
     "about:blank",
@@ -112,150 +121,122 @@ async function main() {
     if (evalRes?.result?.value === true) break;
   }
 
-  console.log("3D Scene loaded. Generating instructional keyframes...");
-  await sleep(800);
+  console.log("3D Scene loaded. Generating continuous 1080p frame sequence...");
+  await sleep(1000);
 
-  // Define keyframe shots for all 12 steps
-  const keyframes = [
-    // Intro
-    { step: 0, progress: 0.0, open: 0.0, rot: 0.0, duration: 2.2, label: "Intro" },
+  /**
+   * Total animation sequence: 480 continuous frames @ 30 FPS = 16 seconds
+   * 
+   * Segment 1 (Frames 0..40): Exploded View Intro (expRatio 1.0 -> 0.0)
+   * Segment 2 (Frames 41..320): 12 Step Assembly Sequence (step 1 to 12, each ~23 frames)
+   * Segment 3 (Frames 321..380): Gas Lift Opening & Closing (openRatio 0.0 -> 0.85 -> 0.0)
+   * Segment 4 (Frames 381..480): 360-Degree Orbital Showcase (camRot 0 -> 2*PI)
+   */
+  const TOTAL_FRAMES = 480;
 
-    // Step 1: Handles on profile
-    { step: 1, progress: 0.4, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 1 (Approach)" },
-    { step: 1, progress: 1.0, open: 0.0, rot: 0.1, duration: 1.4, label: "Step 1 (Complete)" },
+  for (let f = 0; f < TOTAL_FRAMES; f++) {
+    let step = 12;
+    let progress = 1.0;
+    let openRatio = 0.0;
+    let camRot = 0.0;
+    let expRatio = 0.0;
 
-    // Step 2: Metal base frame assembly
-    { step: 2, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 2 (Approach)" },
-    { step: 2, progress: 1.0, open: 0.0, rot: 0.12, duration: 1.4, label: "Step 2 (Complete)" },
+    if (f <= 40) {
+      // 1. Exploded view intro
+      step = 12;
+      const t = f / 40;
+      expRatio = (1 - t);
+      camRot = t * 0.25;
+    } else if (f <= 320) {
+      // 2. 12 Assembly steps
+      const t = (f - 40) / (320 - 40); // 0.0 to 1.0
+      const exactStep = 1 + t * 11;
+      step = Math.min(12, Math.floor(exactStep));
+      progress = exactStep - Math.floor(exactStep);
+      // Small camera panning per step
+      camRot = 0.25 + (step * 0.12) + (progress * 0.06);
+    } else if (f <= 380) {
+      // 3. Bed opening and closing
+      step = 12;
+      const t = (f - 320) / (380 - 320); // 0.0 to 1.0
+      openRatio = Math.sin(t * Math.PI) * 0.85;
+      camRot = 1.8 + t * 0.35;
+    } else {
+      // 4. 360 orbital showcase
+      step = 12;
+      const t = (f - 380) / (TOTAL_FRAMES - 380); // 0.0 to 1.0
+      camRot = 2.15 + t * (Math.PI * 2);
+    }
 
-    // Step 3: Wooden box assembly
-    { step: 3, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 3 (Approach)" },
-    { step: 3, progress: 1.0, open: 0.0, rot: 0.12, duration: 1.5, label: "Step 3 (Complete)" },
-
-    // Step 4: Bottom cross tie bars
-    { step: 4, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.8, label: "Step 4 (Approach)" },
-    { step: 4, progress: 1.0, open: 0.0, rot: 0.1, duration: 1.4, label: "Step 4 (Complete)" },
-
-    // Step 5: Bed base stoppers
-    { step: 5, progress: 0.4, open: 0.0, rot: 0.0, duration: 0.8, label: "Step 5 (Approach)" },
-    { step: 5, progress: 1.0, open: 0.0, rot: 0.1, duration: 1.4, label: "Step 5 (Complete)" },
-
-    // Step 6: Feet / legs
-    { step: 6, progress: 0.4, open: 0.0, rot: 0.0, duration: 0.8, label: "Step 6 (Approach)" },
-    { step: 6, progress: 1.0, open: 0.0, rot: 0.12, duration: 1.4, label: "Step 6 (Complete)" },
-
-    // Step 7: Floor mat panels
-    { step: 7, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.8, label: "Step 7 (Approach)" },
-    { step: 7, progress: 1.0, open: 0.0, rot: 0.12, duration: 1.4, label: "Step 7 (Complete)" },
-
-    // Step 8: Slats assembly
-    { step: 8, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 8 (Approach)" },
-    { step: 8, progress: 1.0, open: 0.0, rot: 0.14, duration: 1.5, label: "Step 8 (Complete)" },
-
-    // Step 9: Scissor mechanisms & gas pistons
-    { step: 9, progress: 0.4, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 9 (Approach)" },
-    { step: 9, progress: 1.0, open: 0.0, rot: 0.14, duration: 1.5, label: "Step 9 (Complete)" },
-
-    // Step 10: Mattress corner retainers
-    { step: 10, progress: 0.4, open: 0.0, rot: 0.0, duration: 0.8, label: "Step 10 (Approach)" },
-    { step: 10, progress: 1.0, open: 0.0, rot: 0.1, duration: 1.4, label: "Step 10 (Complete)" },
-
-    // Step 11: Mounting slatted deck to mechanism
-    { step: 11, progress: 0.45, open: 0.0, rot: 0.0, duration: 0.9, label: "Step 11 (Approach)" },
-    { step: 11, progress: 1.0, open: 0.0, rot: 0.15, duration: 1.6, label: "Step 11 (Complete)" },
-
-    // Step 12: Finished bed opening & closing
-    { step: 12, progress: 1.0, open: 0.0, rot: 0.0, duration: 1.2, label: "Step 12 (Closed)" },
-    { step: 12, progress: 1.0, open: 0.85, rot: 0.25, duration: 2.2, label: "Step 12 (Open Showcase)" },
-    { step: 12, progress: 1.0, open: 0.0, rot: 0.5, duration: 1.5, label: "Step 12 (Closing)" },
-
-    // Outro
-    { step: 13, progress: 1.0, open: 0.0, rot: 0.65, duration: 2.5, label: "Outro" },
-  ];
-
-  // Capture each keyframe
-  const concatListPath = path.join(OUTPUT_DIR, "concat_list.txt");
-  let concatContent = "";
-
-  for (let i = 0; i < keyframes.length; i++) {
-    const kf = keyframes[i];
-    const framePath = path.join(FRAMES_DIR, `frame_${String(i).padStart(3, "0")}.png`);
-
+    // Call window.renderAssemblyFrame
     await cdp.send("Runtime.evaluate", {
-      expression: `window.renderAssemblyFrame(${kf.step}, ${kf.progress}, ${kf.open}, ${kf.rot})`,
+      expression: `window.renderAssemblyFrame(${step}, ${progress.toFixed(3)}, ${openRatio.toFixed(3)}, ${camRot.toFixed(3)}, ${expRatio.toFixed(3)})`,
     });
 
-    await sleep(250); // let Three.js render frame
+    await sleep(35);
 
     const shot = await cdp.send("Page.captureScreenshot", {
       format: "png",
       captureBeyondViewport: false,
     });
 
-    const buffer = Buffer.from(shot.data, "base64");
-    fs.writeFileSync(framePath, buffer);
+    const frameFile = path.join(
+      FRAMES_DIR,
+      `frame_${String(f).padStart(4, "0")}.png`
+    );
+    fs.writeFileSync(frameFile, Buffer.from(shot.data, "base64"));
 
-    console.log(`[${i + 1}/${keyframes.length}] Captured: ${kf.label} (${kf.duration}s)`);
-
-    // Concat file format for FFmpeg
-    const relativePath = path.basename(framePath);
-    concatContent += `file 'video_frames/${relativePath}'\nduration ${kf.duration}\n`;
+    if (f % 40 === 0 || f === TOTAL_FRAMES - 1) {
+      const pct = Math.round((f / TOTAL_FRAMES) * 100);
+      console.log(`  [Frame ${f}/${TOTAL_FRAMES}] ${pct}% rendered (Step: ${step}, Exp: ${expRatio.toFixed(2)})`);
+    }
   }
-
-  // Duplicate last frame to prevent truncation in concat demuxer
-  const lastFrame = path.basename(path.join(FRAMES_DIR, `frame_${String(keyframes.length - 1).padStart(3, "0")}.png`));
-  concatContent += `file 'video_frames/${lastFrame}'\n`;
-
-  fs.writeFileSync(concatListPath, concatContent);
 
   cdp.ws.close();
   chromeProcess.kill();
 
-  // 4. Encode to 1080p 30 FPS H.264 MP4 using FFmpeg
-  console.log(`\n[4/4] Encoding 1080p 30 FPS H.264 MP4 via FFmpeg -> ${OUTPUT_MP4}...`);
+  console.log(`\n[4/4] Encoding ${TOTAL_FRAMES} frames into 1080p 30 FPS MP4 via FFmpeg...`);
+
   await new Promise((resolve, reject) => {
     const ffmpeg = spawn(FFMPEG_PATH, [
       "-y",
-      "-f", "concat",
-      "-safe", "0",
-      "-i", concatListPath,
-      "-vf", "fps=30,format=yuv420p",
+      "-framerate", "30",
+      "-i", path.join(FRAMES_DIR, "frame_%04d.png"),
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "18",
+      "-pix_fmt", "yuv420p",
+      "-crf", "19",
+      "-preset", "slow",
       "-movflags", "+faststart",
       OUTPUT_MP4,
     ]);
 
+    ffmpeg.stdout.on("data", (d) => process.stdout.write(d));
     ffmpeg.stderr.on("data", (d) => {
-      const s = d.toString();
-      if (s.includes("frame=") || s.includes("time=")) {
-        process.stdout.write(`\r${s.trim().slice(0, 75)}`);
+      const line = d.toString();
+      if (line.includes("frame=") || line.includes("fps=")) {
+        process.stdout.write(`\r${line.trim()}`);
       }
     });
 
     ffmpeg.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`FFmpeg exited with code ${code}`));
+      if (code === 0) {
+        console.log("\nFFmpeg encoding complete!");
+        resolve();
+      } else {
+        reject(new Error(`FFmpeg exited with code ${code}`));
+      }
     });
   });
 
-  if (fs.existsSync(OUTPUT_MP4)) {
-    fs.copyFileSync(OUTPUT_MP4, PREVIEW_MP4);
-    const stats = fs.statSync(OUTPUT_MP4);
-    console.log("\n========================================================");
-    console.log("SUCCESS! Video generation complete:");
-    console.log(`Path: ${OUTPUT_MP4}`);
-    console.log(`Preview: ${PREVIEW_MP4}`);
-    console.log(`Resolution: 1920x1080 (Full HD)`);
-    console.log(`Framerate: 30 FPS`);
-    console.log(`Format: H.264 / MP4`);
-    console.log(`Size: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
-    console.log("========================================================\n");
-  }
+  const stats = fs.statSync(OUTPUT_MP4);
+  console.log(`\n======================================================`);
+  console.log(`1080p Assembly Video successfully generated!`);
+  console.log(`Path: ${OUTPUT_MP4}`);
+  console.log(`Size: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
+  console.log(`======================================================`);
 }
 
 main().catch((err) => {
-  console.error("FATAL ERROR:", err);
+  console.error("Video rendering failed:", err);
   process.exit(1);
 });

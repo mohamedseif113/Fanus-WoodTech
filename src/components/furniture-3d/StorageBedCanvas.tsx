@@ -15,7 +15,13 @@ import * as THREE from "three";
 import { StorageBed3D, StorageBed3DProps } from "./StorageBed3D";
 import { ASSEMBLY_STEPS } from "@/lib/constants/assemblySteps";
 
-function CameraStepController({ step }: { step: number }) {
+function CameraStepController({
+  step,
+  resetTrigger,
+}: {
+  step: number;
+  resetTrigger?: number;
+}) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
@@ -31,6 +37,14 @@ function CameraStepController({ step }: { step: number }) {
       isTransitioning.current = true;
     }
   }, [step]);
+
+  useEffect(() => {
+    if (resetTrigger && resetTrigger > 0) {
+      targetPos.current.set(2.5, 1.4, 2.8);
+      targetLook.current.set(0, 0.45, 0);
+      isTransitioning.current = true;
+    }
+  }, [resetTrigger]);
 
   useFrame((_, delta) => {
     if (isTransitioning.current && controlsRef.current) {
@@ -83,10 +97,12 @@ function ShowroomEnvironment() {
 
 interface StorageBedCanvasProps extends StorageBed3DProps {
   assemblyStep?: number;
+  resetCameraTrigger?: number;
 }
 
 export const StorageBedCanvas: React.FC<StorageBedCanvasProps> = ({
   assemblyStep = 12,
+  resetCameraTrigger = 0,
   ...bedProps
 }) => {
   return (
@@ -97,7 +113,7 @@ export const StorageBedCanvas: React.FC<StorageBedCanvasProps> = ({
         gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
         className="canvas-3d-cursor"
       >
-        <CameraStepController step={assemblyStep} />
+        <CameraStepController step={assemblyStep} resetTrigger={resetCameraTrigger} />
 
         <Suspense fallback={null}>
           <Environment files="/studio.hdr" />
